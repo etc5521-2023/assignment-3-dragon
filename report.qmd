@@ -1,18 +1,42 @@
 ---
-title: "MY WILD THING REPORT"
-author: "YOUR TEAM NAME AND MEMBERS HERE"
+title: "Wild Wonders"
+author: "Team- Dragon, Members- Jay and Justin"
 format: html
 ---
 
 ## Introduction
 
-<!-- 
-1. For your assigned Australian wild thing, read all you can about it, and write a paragraph describing it's key features, such as it's habitat, usual active time, whether numbers are increasing or declining, and even things like, if it is common for tourists to travel to see them, or there are special spotting promotions occurring as is happening [this month for the platypus](https://platypus.asn.au/report-a-sighting/). The write five unique expectations on what you might find when you explore the data, for example: 
-<br><br>"We expect to see the occurrences only in the summer months."
-<br>"We expect to find the most occurrences near the coast."
-<br>"We expect to observe declining numbers since 1994."
-<br><br> Be as specific as reasonably possible for your wild thing!
--->
+Genus Euoplos Rainbow is a genus of armored trapdoor spiders that is endemic to Australia. It was first described by William Joseph Rainbow in 1914. There are currently 14 recognized species in the genus Euoplos.
+
+Euoplos spiders are typically small to medium in size, with body lengths ranging from 10 to 25 mm. They are characterized by their heavily armored carapaces (head plates) and opisthosomae (abdomens). The carapaces of Euoplos spiders are typically dark in color, while the opisthosomae can be brightly colored or patterned.
+
+Euoplos spiders are nocturnal predators, and they spend most of their time in their burrows. Their burrows are typically constructed in sandy or loamy soil, and they have a hinged lid that the spider can close to protect itself from predators. Euoplos spiders prey on a variety of insects and other invertebrates, which they capture using their powerful fangs.
+
+Euoplos spiders are found in a variety of habitats throughout Australia, including forests, woodlands, grasslands, and deserts. They are particularly common in dry, open habitats.
+
+Some species of Euoplos spiders are thought to be threatened by habitat loss and degradation, as well as competition from introduced spider species. However, more research is needed to determine the conservation status of most Euoplos species.
+
+- Habitat: Genus Euoplos Rainbow is found in dry, open habitats, such as forests and woodlands in Australia.
+
+- Usual active time: Euoplos spiders are no
+cturnal, meaning they are most active at night.
+
+- Population trend: The population trend of Euoplos spiders is unknown. However, some species are thought to be threatened by habitat loss and degradation, as well as competition from introduced spider species.
+
+- Tourist appeal: Euoplos spiders are not a major tourist attraction. However, there are a few places where tourists can see them in the wild, such as the Australian Capital Territory's Tidbinbilla Nature Reserve and the New South Wales' Royal National Park.
+
+- Expectation:
+
+<p style="padding-left: 50px;">We expect to see the occurrences only in the summer months, as Euoplos spiders are a warm-weather species.</p>
+<p style="padding-left: 50px;">We expect to find the most occurrences in dry, open habitats.</p>
+<p style="padding-left: 50px;">We expect to observe declining numbers since 1994, as this is the trend for many spider species in Australia.</p>
+<p style="padding-left: 50px;">We expect to find that Euoplos spiders are more common in protected areas, such as national parks.</p>
+<p style="padding-left: 50px;">We expect to find that Euoplos spiders are more likely to be found in areas with good habitat quality.</p>
+
+<br>These are just a few expectations, and the actual data may reveal different patterns. It is important to note that the data on Euoplos spiders is limited, so it is difficult to make definitive conclusions about their distribution, population trend, and other aspects of their biology.
+
+
+
 
 ## Data description
 
@@ -39,3 +63,10 @@ Weather data exploration here too.
 ## Summary 
 
 ## References
+
+Proper sitation is not done yet fot the 
+
+Australian Faunal Directory: https://biodiversity.org.au/afd/taxa/Euoplos
+Atlas of Living Australia: https://bie.ala.org.au/species/https://biodiversity.org.au/afd/taxa/1b5cd7fc-fed7-4788-ac39-b33cafc7bbb4
+Australian Spiders in Colour: https://www.termite.com.au/spider-identification.html
+A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.htm
