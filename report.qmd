@@ -4,6 +4,13 @@ author: "YOUR TEAM NAME AND MEMBERS HERE"
 format: html
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE)
+```  
+  
+
 ## Introduction
 
 <!-- 
@@ -14,11 +21,42 @@ format: html
 <br><br> Be as specific as reasonably possible for your wild thing!
 -->
 
+The Australian golden trapdoor spiders of the tribe Euoplini, belonging to the family Idiopidae, are particularly abundant and diverse in subtropical eastern Australia. These spiders, unlike most trapdoor spiders that inhabit tropical regions globally, occupy various habitats ranging from shady riverbanks to open desert areas, showing a preference for steep slopes and loose, sandy soils. They construct burrows with distinctive trapdoor lids, which they use as both shelter and a hunting mechanism. These burrows can be found near water sources, occasionally serving as a means to catch small fish. Typically nocturnal, Euoplos Rainbow and other trapdoor spiders emerge from their burrows at night to hunt for prey, remaining concealed during the day. Information about population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. They are not commonly a target for tourists, and organized promotions or tours to observe them are rare. The name "trapdoor" spider originates from their burrows, which have hinged or camouflaged door-like lids, serving as concealed traps for unsuspecting prey. 
+
+Unique expectations for exploring the data on Euoplos Rainbow sightings could include:
+
+1. "We expect to observe a higher concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, given their abundance in this region."
+   
+2. "We expect to find a variety of habitat preferences in the data, ranging from riverbanks to desert areas, reflecting the adaptability of Euoplos Rainbow."
+
+3. "We anticipate that the majority of sightings will occur during nighttime hours, consistent with the nocturnal behavior of trapdoor spiders."
+
+4. "We do not expect to see a significant number of sightings linked to tourism, as trapdoor spiders are not typically considered tourist attractions."
+
+5. "We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging."
+
 ## Data description
 
 <!--
 2. Download all the occurrence records from the Atlas of Living Australia, ideally scripted using the `atlas_occurrences()` function from the `galah` package. Make sure you include date, time, collector identification details. Save this into a `data-raw` folder in your repo.
 -->
+
+```{r}
+library(galah)
+library(tidyverse)
+galah_config(email = "anhquang1100@gmail.com",
+             download_reason_id = 10, 
+             verbose = TRUE)
+spider <- ala_occurrences(
+  taxa = select_taxa("Euoplos Rainbow"))
+spider <- spider %>% 
+  rename(Longitude = decimalLongitude,
+         Latitude = decimalLatitude) %>%
+  mutate(eventDate = as.Date(eventDate)) %>%
+  filter(!is.na(eventDate)) %>%
+  filter(!is.na(Longitude)) %>%
+  filter(!is.na(Latitude))
+```
 
 ## Initial data analysis
 
