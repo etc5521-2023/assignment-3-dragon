@@ -1,80 +1,115 @@
 ---
-title: "MY WILD THING REPORT"
-author: "YOUR TEAM NAME AND MEMBERS HERE"
+title: "Wild Wonders"
+author: "Team - Dragon, Members - Jay and Justin"
 format: html
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, 
+knitr::opts_chunk$set(echo = F, 
                       warning=FALSE, 
                       message=FALSE)
 ```  
   
 
-## Introduction
+# Introduction
 
-<!-- 
-1. For your assigned Australian wild thing, read all you can about it, and write a paragraph describing it's key features, such as it's habitat, usual active time, whether numbers are increasing or declining, and even things like, if it is common for tourists to travel to see them, or there are special spotting promotions occurring as is happening [this month for the platypus](https://platypus.asn.au/report-a-sighting/). The write five unique expectations on what you might find when you explore the data, for example: 
-<br><br>"We expect to see the occurrences only in the summer months."
-<br>"We expect to find the most occurrences near the coast."
-<br>"We expect to observe declining numbers since 1994."
-<br><br> Be as specific as reasonably possible for your wild thing!
--->
+Genus Euoplos Rainbow, belonging to the family Idiopidae, is a fascinating group of armored trapdoor spiders endemic to Australia. First described by William Joseph Rainbow in 1914, this genus comprises 14 recognized species. These spiders typically range in size from 10 to 25 mm and are characterized by their heavily armored carapaces and opisthosomae. While their carapaces tend to be dark in color, their opisthosomae can display striking patterns and vibrant colors.
 
-The Australian golden trapdoor spiders of the tribe Euoplini, belonging to the family Idiopidae, are particularly abundant and diverse in subtropical eastern Australia. These spiders, unlike most trapdoor spiders that inhabit tropical regions globally, occupy various habitats ranging from shady riverbanks to open desert areas, showing a preference for steep slopes and loose, sandy soils. They construct burrows with distinctive trapdoor lids, which they use as both shelter and a hunting mechanism. These burrows can be found near water sources, occasionally serving as a means to catch small fish. Typically nocturnal, Euoplos Rainbow and other trapdoor spiders emerge from their burrows at night to hunt for prey, remaining concealed during the day. Information about population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. They are not commonly a target for tourists, and organized promotions or tours to observe them are rare. The name "trapdoor" spider originates from their burrows, which have hinged or camouflaged door-like lids, serving as concealed traps for unsuspecting prey. 
+Euoplos spiders are nocturnal hunters, primarily active during the night, emerging from their burrows to capture prey. Their burrows, often constructed in sandy or loamy soil, feature a hinged lid that serves as both protection and a concealed trap for unsuspecting prey. They are versatile predators, preying on a variety of insects and invertebrates with their powerful fangs.
 
-Unique expectations for exploring the data on Euoplos Rainbow sightings could include:
+These spiders can be found in diverse habitats across Australia, including forests, woodlands, grasslands, and deserts. Their preference for dry, open habitats is particularly noteworthy.
 
-1. "We expect to observe a higher concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, given their abundance in this region."
-   
-2. "We expect to find a variety of habitat preferences in the data, ranging from riverbanks to desert areas, reflecting the adaptability of Euoplos Rainbow."
+Information about the population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. Some species may face threats from habitat loss, degradation, and competition from introduced spider species, but more research is needed to determine their conservation status.
 
-3. "We anticipate that the majority of sightings will occur during nighttime hours, consistent with the nocturnal behavior of trapdoor spiders."
+In terms of expectations for exploring data on Euoplos Rainbow sightings, some unique possibilities include:
 
-4. "We do not expect to see a significant number of sightings linked to tourism, as trapdoor spiders are not typically considered tourist attractions."
+1. "We expect to observe a concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, reflecting their abundance in this region."
 
-5. "We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging."
+2. "We anticipate a diversity of habitat preferences in the data, including riverbanks and desert areas, showcasing the adaptability of Euoplos Rainbow."
 
-## Data description
+3. "Given their nocturnal behavior, we expect the majority of sightings to occur during nighttime hours."
 
-<!--
-2. Download all the occurrence records from the Atlas of Living Australia, ideally scripted using the `atlas_occurrences()` function from the `galah` package. Make sure you include date, time, collector identification details. Save this into a `data-raw` folder in your repo.
--->
+4. "Tourist appeal for Euoplos spiders is limited, but we expect to identify a few locations where tourists can encounter them in the wild, such as Tidbinbilla Nature Reserve in the Australian Capital Territory and the Royal National Park in New South Wales."
 
-```{r}
+5. "We anticipate challenges in assessing population trends for Euoplos Rainbow due to the elusive nature of these spiders and the limited available data."
+
+These expectations provide a basis for exploring and analyzing the data on Euoplos Rainbow sightings while considering their unique biology and habitat preferences.
+
+# Data description
+
+```{r, message = F}
 library(galah)
 library(tidyverse)
 galah_config(email = "anhquang1100@gmail.com",
              download_reason_id = 10, 
              verbose = TRUE)
-spider <- ala_occurrences(
-  taxa = select_taxa("Euoplos Rainbow"))
-spider <- spider %>% 
-  rename(Longitude = decimalLongitude,
-         Latitude = decimalLatitude) %>%
-  mutate(eventDate = as.Date(eventDate)) %>%
-  filter(!is.na(eventDate)) %>%
-  filter(!is.na(Longitude)) %>%
-  filter(!is.na(Latitude))
 
-spider2 <- galah_call() %>%
+spider <- galah_call() %>%
   galah_identify("Euoplos Rainbow") %>%
   galah_select(basisOfRecord, samplingProtocol, group = "basic") %>%
   atlas_occurrences()
 
-spider2 <- spider2 %>%
-  filter(basisOfRecord == "HUMAN_OBSERVATION")
+spider <- spider %>% 
+  rename(Longitude = decimalLongitude,
+         Latitude = decimalLatitude) %>%
+  mutate(eventDate = as.Date(eventDate))
+
+# Save data as an R object in the "data-raw" folder
+save(spider, file = "data-raw/spider.rda")
 ```
 
-## Initial data analysis
+# Initial data analysis
 
 <!--
 3. Perform a data quality check, and then go ahead and clean the data, saving only the wild sightings. Save the resulting data in a `data` folder as an `WILD_THING_COMMON_NAME.rda` file, so that any special variable types are clearly available. (Replace `WILD_THING_COMMON_NAME` with lower case common name of your assigned wild thing.) *Note:* Some are museum or historical records or live in an animal sanctuary or zoo, which do not truly capture their wild behaviour. Downloading the event information (`galah_select(group = "event")`) can help identify wild sightings.
 
 Weather data pre-processing here too.
 -->
+## Spider data
 
-## Exploratory data analysis
+```{r, eval = F}
+  filter(!is.na(eventDate)) %>%
+  filter(!is.na(Longitude)) %>%
+  filter(!is.na(Latitude))
+
+spider2 <- spider2 %>%
+  filter(basisOfRecord == "HUMAN_OBSERVATION")
+```
+
+## Weather data
+
+```{r, eval = F}
+### Weather data
+library(rnoaa)
+aus_stations <- ghcnd_stations() |>
+  filter(str_starts(id, "ASN")) |>
+  filter(last_year >= 2020) |>
+  mutate(wmo_id = as.numeric(wmo_id),
+         name = str_to_lower(name)) |>
+  select(-state, -gsn_flag) |>
+  filter(element %in% c("PRCP", "TMAX", "TMIN")) |>
+  nest(element: last_year) |>
+  rowwise() |>
+  filter(nrow(data) == 3) |>
+  select(-data) 
+```
+
+```{r, eval = F}
+narrogin <- aus_stations |>
+  filter(id == "ASN00010614") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "2004-01-01",
+    date_max = "2023-09-13") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10, tmin = tmin/ 10)
+```
+
+
+# Exploratory data analysis
 
 <!--
 4. Make plots of the data to check each of your expectations, and report what you learn. *Note:* This might also be a place where visual inference methods *may* be useful to determine if what is seen agrees or disputes what you expected. 
@@ -82,6 +117,36 @@ Weather data pre-processing here too.
 Weather data exploration here too.
 -->
 
-## Summary 
+# Summary 
 
-## References
+# References
+
+Proper citation is not done yet for the 
+
+Australian Faunal Directory: https://biodiversity.org.au/afd/taxa/Euoplos
+Atlas of Living Australia: https://bie.ala.org.au/species/https://biodiversity.org.au/afd/taxa/1b5cd7fc-fed7-4788-ac39-b33cafc7bbb4
+Australian Spiders in Colour: https://www.termite.com.au/spider-identification.html
+A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.htm
+
+::: {.callout-caution collapse="true"}
+# Package Citation
+
+## tidyverse
+
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L,
+Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu
+V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of
+Open Source Software_, *4*(43), 1686. doi: 10.21105/joss.01686 (URL:
+https://doi.org/10.21105/joss.01686).
+
+## galah
+
+Westgate M, Stevenson M, Kellie D, Newman P (2023). _galah: Atlas of Living Australia (ALA) Data and
+Resources in R_. R package version 1.5.2, <URL: https://CRAN.R-project.org/package=galah>.
+
+## rnoaa
+Scott Chamberlain and Daniel Hocking (2023). rnoaa: 'NOAA' Weather Data from R. R package version
+  1.4.0. https://CRAN.R-project.org/package=rnoaa
+  
+:::
+
