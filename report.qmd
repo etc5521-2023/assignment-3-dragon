@@ -56,6 +56,14 @@ spider <- spider %>%
   filter(!is.na(eventDate)) %>%
   filter(!is.na(Longitude)) %>%
   filter(!is.na(Latitude))
+
+spider2 <- galah_call() %>%
+  galah_identify("Euoplos Rainbow") %>%
+  galah_select(basisOfRecord, samplingProtocol, group = "basic") %>%
+  atlas_occurrences()
+
+spider2 <- spider2 %>%
+  filter(basisOfRecord == "HUMAN_OBSERVATION")
 ```
 
 ## Initial data analysis
