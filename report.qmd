@@ -75,6 +75,43 @@ Euoplos_Rainbow_event <- galah_call() |>
 
 ```
 
+```{r}
+# Convert eventDate to Date format without the time component
+Euoplos_Rainbow$eventDate <- as.Date(Euoplos_Rainbow$eventDate)
+Euoplos_Rainbow_event$eventDate <- as.Date(Euoplos_Rainbow_event$eventDate)
+
+```
+
+```{r}
+# Convert timezone-specific times to plain hour:minute:second format
+timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
+
+# For plain hour:minute, append ":00" to make it hour:minute:second
+plain_time_format <- grepl("^[0-9]{2}:[0-9]{2}$", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_event$eventTime[plain_time_format], ":00")
+```
+
+
+```{r}
+# Merging based on eventDate
+Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate", all=TRUE)
+
+# Merging the result with Euoplos_Rainbow_assert based on recordID
+Euoplos_Rainbow_3 <- merge(Euoplos_Rainbow_2, Euoplos_Rainbow_assert, by="recordID", all=TRUE)
+
+# Convert 12-hour format to 24-hour format
+twelve_hour_format <- grepl("[APM]{2}", Euoplos_Rainbow_event$eventTime, ignore.case=TRUE)
+Euoplos_Rainbow_event$eventTime[twelve_hour_format] <- format(strptime(Euoplos_Rainbow_event$eventTime[twelve_hour_format], format="%I:%M %p"), "%H:%M:%S")
+
+
+
+
+# Euoplos_Rainbow_event$eventTime[is.na(Euoplos_Rainbow_event$eventTime)] <- "00:00:00"
+
+
+```
+
 
 
 ## Initial data analysis
