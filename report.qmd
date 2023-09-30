@@ -44,6 +44,39 @@ cturnal, meaning they are most active at night.
 2. Download all the occurrence records from the Atlas of Living Australia, ideally scripted using the `atlas_occurrences()` function from the `galah` package. Make sure you include date, time, collector identification details. Save this into a `data-raw` folder in your repo.
 -->
 
+```{r}
+library(tidyverse)
+library(galah)
+```
+
+
+```{r}
+
+galah_config(email = "jaysangani04@gmail.com")
+Euoplos_Rainbow <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  atlas_occurrences()
+
+# Filter records based on date (reliable sightings after 1990)
+Euoplos_Rainbow <- Euoplos_Rainbow %>%
+  filter(eventDate >= as.Date("1990-01-01"))
+
+# Filter out unreliable sightings (BASIS_OF_RECORD_INVALID)
+Euoplos_Rainbow_assert <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select(group = "assertions") |>
+  atlas_occurrences() %>%
+  filter(BASIS_OF_RECORD_INVALID != "TRUE")
+
+Euoplos_Rainbow_event <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select(group = "event") |>
+  atlas_occurrences()
+
+```
+
+
+
 ## Initial data analysis
 
 <!--
