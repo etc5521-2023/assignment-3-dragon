@@ -47,6 +47,7 @@ cturnal, meaning they are most active at night.
 ```{r}
 library(tidyverse)
 library(galah)
+library(lubridate)
 ```
 
 
@@ -100,14 +101,34 @@ Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate
 # Merging the result with Euoplos_Rainbow_assert based on recordID
 Euoplos_Rainbow_3 <- merge(Euoplos_Rainbow_2, Euoplos_Rainbow_assert, by="recordID", all=TRUE)
 
+#all=TRUE argument ensures a full outer join, keeping all rows from both data frames in the result, even if there's no matching recordID.
+
+
 # Convert 12-hour format to 24-hour format
 twelve_hour_format <- grepl("[APM]{2}", Euoplos_Rainbow_event$eventTime, ignore.case=TRUE)
 Euoplos_Rainbow_event$eventTime[twelve_hour_format] <- format(strptime(Euoplos_Rainbow_event$eventTime[twelve_hour_format], format="%I:%M %p"), "%H:%M:%S")
 
+#converting time from AM/PM to HH:MM:SS
+convert_time <- function(time) {
+  if(grepl("AM|PM", time, ignore.case = TRUE)) {
+    return(format(parse_date_time(time, "h:M%p"), "%H:%M:%S"))
+  }
+  return(time)
+}
+
+Euoplos_Rainbow_3$eventTime <- sapply(Euoplos_Rainbow_3$eventTime, convert_time)
+
+#selecting neccesory variables
+Euoplos_Rainbow_3 <- Euoplos_Rainbow_3 %>% 
+  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventID, eventTime, samplingProtocol)
+
+#removing duplicates from the dataset
+Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>% 
+  distinct()
 
 
 
-# Euoplos_Rainbow_event$eventTime[is.na(Euoplos_Rainbow_event$eventTime)] <- "00:00:00"
+Euoplos_Rainbow_combined$eventTime <- hms::as_hms(Euoplos_Rainbow_combined$eventTime)
 
 
 ```
