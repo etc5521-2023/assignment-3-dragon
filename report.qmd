@@ -131,6 +131,9 @@ Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>%
 Euoplos_Rainbow_combined$eventTime <- hms::as_hms(Euoplos_Rainbow_combined$eventTime)
 
 
+# Save data as an R object in the "data-raw" folder
+save(spider, file = "data-raw/spider.rda")
+
 ```
 
 
