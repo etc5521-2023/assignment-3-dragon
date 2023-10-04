@@ -64,6 +64,103 @@ spider2 <- galah_call() %>%
 
 spider2 <- spider2 %>%
   filter(basisOfRecord == "HUMAN_OBSERVATION")
+
+# Convert timezone-specific times to plain hour:minute:second format
+timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", spider2$eventTime)
+Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
+
+# For plain hour:minute, append ":00" to make it hour:minute:second
+plain_time_format <- grepl("^[0-9]{2}:[0-9]{2}$", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_event$eventTime[plain_time_format], ":00")
+
+```
+
+```{r}
+library(lubridate)
+library(galah)
+library(tidyverse)
+galah_config(email = "jaysangani04@gmail.com")
+Euoplos_Rainbow <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  atlas_occurrences()
+
+# Filter records based on date (reliable sightings after 1990)
+Euoplos_Rainbow <- Euoplos_Rainbow %>%
+  filter(eventDate >= as.Date("1990-01-01"))
+
+# Filter out unreliable sightings (BASIS_OF_RECORD_INVALID)
+Euoplos_Rainbow_assert <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select( group = "assertions") |>
+  atlas_occurrences() %>%
+  filter(BASIS_OF_RECORD_INVALID != "TRUE")
+
+Euoplos_Rainbow_event <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select(basisOfRecord, group = "event") |>
+  atlas_occurrences()
+
+```
+
+```{r}
+# Convert eventDate to Date format without the time component
+Euoplos_Rainbow$eventDate <- as.Date(Euoplos_Rainbow$eventDate)
+Euoplos_Rainbow_event$eventDate <- as.Date(Euoplos_Rainbow_event$eventDate)
+```
+
+```{r}
+# Convert timezone-specific times to plain hour:minute:second format
+timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
+
+# For plain hour:minute, append ":00" to make it hour:minute:second
+plain_time_format <- grepl("^[0-9]{2}:[0-9]{2}$", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_event$eventTime[plain_time_format], ":00")
+```
+
+```{r}
+# Merging based on eventDate
+Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate", keep.all=TRUE)
+
+# Merging the result with Euoplos_Rainbow_assert based on recordID
+Euoplos_Rainbow_3 <- merge(Euoplos_Rainbow_2, Euoplos_Rainbow_assert, by="recordID", keep.all=TRUE)
+
+#all=TRUE argument ensures a full outer join, keeping all rows from both data frames in the result, even if there's no matching recordID.
+
+
+# Convert 12-hour format to 24-hour format
+twelve_hour_format <- grepl("[APM]{2}", Euoplos_Rainbow_event$eventTime, ignore.case=TRUE)
+Euoplos_Rainbow_event$eventTime[twelve_hour_format] <- format(strptime(Euoplos_Rainbow_event$eventTime[twelve_hour_format], format="%I:%M %p"), "%H:%M:%S")
+
+#converting time from AM/PM to HH:MM:SS
+convert_time <- function(time) {
+  if(grepl("AM|PM", time, ignore.case = TRUE)) {
+    return(format(parse_date_time(time, "h:M%p"), "%H:%M:%S"))
+  }
+  return(time)
+}
+
+Euoplos_Rainbow_3$eventTime <- sapply(Euoplos_Rainbow_3$eventTime, convert_time)
+
+#selecting neccesory variables
+Euoplos_Rainbow_3 <- Euoplos_Rainbow_3 %>% 
+  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventID, eventTime, samplingProtocol, basisOfRecord)
+
+#removing duplicates from the dataset
+Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>% 
+  distinct()
+
+
+
+Euoplos_Rainbow_combined$eventTime <- hms::as_hms(Euoplos_Rainbow_combined$eventTime)
+
+final_Euoplos_Rainbow <- Euoplos_Rainbow_combined %>%
+  filter(basisOfRecord == "HUMAN_OBSERVATION")
+```
+
+```{r}
+# Save data as an R object in the "data-raw" folder
+save(spider, file = "data-raw/spider.rda")
 ```
 
 ## Initial data analysis
@@ -73,6 +170,142 @@ spider2 <- spider2 %>%
 
 Weather data pre-processing here too.
 -->
+
+```{r}
+final_Euoplos_Rainbow$eventHour <- hour(final_Euoplos_Rainbow$eventTime)
+
+final_Euoplos_Rainbow %>%
+  ggplot(aes(x = eventHour)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(title = "Distribution of Spider Sightings by Hour of the Day",
+       x = "Hour of the Day",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+If considered nighttime hours to be between 6pm and 12am, surprisingly, most sightings of Euoplos Rainbow happens during daytime, which is contrast to initial statement.
+
+```{r}
+install.packages("ozmaps")
+library(ozmaps)
+
+sf_oz <- ozmap_data("states")
+
+# Add the Australian state boundaries
+gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
+  geom_point(data = final_Euoplos_Rainbow,
+                      mapping = aes(x = decimalLongitude,
+                                    y = decimalLatitude
+                                   ),
+                      color = "blue", alpha = 0.5) +
+  geom_point(data = aus_stations, 
+             mapping = aes(x = longitude,
+                           y = latitude),
+             color = "black", alpha = 1) +
+  geom_text(data = aus_stations,
+            mapping = aes(x = longitude,
+                         y = latitude, 
+                          label = name),
+            size = 2, vjust = 1, hjust = 0.5) +
+  coord_sf(ylim = c(-44.5, -10), xlim = c(110, 155)) +
+  theme_void() + 
+  theme(legend.position = "none") +
+  labs(title = "Where is Eupolos Rainbow sighted?")
+
+gg
+```
+
+```{r}
+gg + coord_sf(ylim = c(-29, -26.5), xlim = c(152, 155)) 
+
+aus_stations %>%
+  filter(latitude < -26.5, latitude > -29,
+         longitude > 152, latitude < 155) %>%
+  filter(name %in% c("brisbane", "maroochydore aero", "logan city water treatment", "murwillumbah (bray park)"))
+```
+
+
+We can see that most of sightings occur on the rear end of eastern Australia
+
+```{r}
+library(rnoaa)
+library(tidyverse)
+aus_stations <- ghcnd_stations() |>
+  filter(str_starts(id, "ASN")) |>
+  filter(last_year >= 2020) |>
+  mutate(wmo_id = as.numeric(wmo_id),
+         name = str_to_lower(name)) |>
+  select(-state, -gsn_flag) |>
+  filter(element %in% c("PRCP", "TMAX", "TMIN")) |>
+  nest(element: last_year) |>
+  rowwise() |>
+  filter(nrow(data) == 3) |>
+  select(-data) 
+```
+
+### Logan city water treatment (ASN00040854)
+```{r}
+logan_city <- aus_stations |>
+  filter(id == "ASN00040854") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "2004-01-01",
+    date_max = "2023-09-13") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> 
+  select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10, tmin = tmin/ 10)
+```
+
+### maroochydore aero (ASN00040861)
+```{r}
+maroochydore <- aus_stations |>
+  filter(id == "ASN00040861") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "2004-01-01",
+    date_max = "2023-09-13") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> 
+  select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10, tmin = tmin/ 10)
+```
+
+### brisbane (ASN00040913) 
+```{r}
+brisbane <- aus_stations |>
+  filter(id == "ASN00040913") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "2004-01-01",
+    date_max = "2023-09-13") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> 
+  select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10, tmin = tmin/ 10)
+```
+
+### murwillumbah (bray park) (ASN00058158)
+```{r}
+murwillumbah <- aus_stations |>
+  filter(id == "ASN00058158") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "2004-01-01",
+    date_max = "2023-09-13") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> 
+  select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10, tmin = tmin/ 10)
+```
 
 ## Exploratory data analysis
 
