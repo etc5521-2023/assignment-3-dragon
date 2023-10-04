@@ -44,14 +44,14 @@ cturnal, meaning they are most active at night.
 2. Download all the occurrence records from the Atlas of Living Australia, ideally scripted using the `atlas_occurrences()` function from the `galah` package. Make sure you include date, time, collector identification details. Save this into a `data-raw` folder in your repo.
 -->
 
-```{r}
+```{r Libraries}
 library(tidyverse)
 library(galah)
 library(lubridate)
 ```
 
 
-```{r}
+```{r loading the data and filtering}
 
 galah_config(email = "jaysangani04@gmail.com")
 Euoplos_Rainbow <- galah_call() |>
@@ -76,14 +76,14 @@ Euoplos_Rainbow_event <- galah_call() |>
 
 ```
 
-```{r}
+```{r converting date format}
 # Convert eventDate to Date format without the time component
 Euoplos_Rainbow$eventDate <- as.Date(Euoplos_Rainbow$eventDate)
 Euoplos_Rainbow_event$eventDate <- as.Date(Euoplos_Rainbow_event$eventDate)
 
 ```
 
-```{r}
+```{r converting time}
 # Convert timezone-specific times to plain hour:minute:second format
 timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", Euoplos_Rainbow_event$eventTime)
 Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
@@ -94,7 +94,7 @@ Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_eve
 ```
 
 
-```{r}
+```{r formating time, merging & saving dataset}
 # Merging based on eventDate
 Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate", all=TRUE)
 
@@ -132,7 +132,7 @@ Euoplos_Rainbow_combined$eventTime <- hms::as_hms(Euoplos_Rainbow_combined$event
 
 
 # Save data as an R object in the "data-raw" folder
-save(spider, file = "data-raw/spider.rda")
+save(Euoplos_Rainbow_combined, file = "data-raw/Euoplos_Rainbow.rda")
 
 ```
 
@@ -145,6 +145,134 @@ save(spider, file = "data-raw/spider.rda")
 
 Weather data pre-processing here too.
 -->
+
+```{r}
+# Filter for wild sightings
+wild_sightings <- Euoplos_Rainbow_combined %>%
+  filter(!is.na(samplingProtocol))
+```
+
+```{r}
+save(data, file = "data-raw/spider.rda")
+```
+
+
+```{r}
+library(rnoaa)
+aus_stations <- ghcnd_stations() |>
+  filter(str_starts(id, "ASN")) |>
+  filter(last_year >= 2020) |>
+  mutate(wmo_id = as.numeric(wmo_id),
+         name = str_to_lower(name)) |>
+  select(-state, -gsn_flag) |>
+  filter(element %in% c("PRCP", "TMAX", "TMIN")) |>
+  nest(element: last_year) |>
+  rowwise() |>
+  filter(nrow(data) == 3) |>
+  select(-data)
+```
+
+```{r}
+# latitude and longitude ranges
+min_latitude <- -43.6578
+max_latitude <- -10.0511
+min_longitude <- 113.5319
+max_longitude <- 153.6358
+
+# Subset the data to select sightings within the specified region
+selected_region_sightings <- wild_sightings %>%
+  filter(decimalLatitude >= min_latitude &
+         decimalLatitude <= max_latitude &
+         decimalLongitude >= min_longitude &
+         decimalLongitude <= max_longitude)
+```
+
+```{r warning=FALSE}
+# Count the occurrences of latitude and longitude combinations
+coord_counts <- wild_sightings %>%
+  group_by(decimalLatitude, decimalLongitude) %>%
+  summarise(count = n())
+
+# Arrange the coordinates in descending order of count
+coord_counts <- coord_counts %>%
+  arrange(desc(count))
+
+# Print the result
+print(coord_counts)
+
+```
+
+
+
+```{r}
+# Specify the coordinates of your region of interest
+region_latitude <- -30.07027	 
+region_longitude <- 153.1089
+
+# Calculate distances between your region and all weather stations
+library(geosphere)
+
+station_distances <- aus_stations %>%
+  mutate(
+    distance = distHaversine(cbind(longitude, latitude), c(region_longitude, region_latitude)),
+    distance_km = distance / 1000
+  )
+
+# Set a maximum acceptable distance to consider a weather station
+max_acceptable_distance_km <- 50  # You can adjust this value based on your needs
+
+# Select the weather station(s) within the acceptable distance
+nearest_weather_stations <- station_distances %>%
+  filter(distance_km <= max_acceptable_distance_km)
+```
+
+
+
+```{r}
+narrogin <- aus_stations |>
+  filter(id == "ASN00059040") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "1912-07-15",
+    date_max = "2021-06-19") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10,tmin = tmin/10)
+```
+
+```{r}
+# Assuming you have a column in your dataset called "eventDate" of Date type
+wild_sightings <- wild_sightings %>%
+  mutate(sighting = 1)
+```
+
+
+```{r}
+narrogin <- narrogin %>%
+  select(date, tmax, tmin, prcp)
+```
+
+
+```{r}
+final_data <- narrogin %>%
+  left_join(wild_sightings, by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(sighting), 0, sighting))
+
+#Remove duplicate observations
+final_data <- final_data %>%
+  distinct()
+
+final_data <- final_data %>%
+  select(date, tmax, tmin, prcp,sighting)
+
+```
+
+```{r}
+save(final_data, file = "data/final-data.rda")
+```
+
 
 ## Exploratory data analysis
 
@@ -163,4 +291,4 @@ Proper sitation is not done yet fot the
 Australian Faunal Directory: https://biodiversity.org.au/afd/taxa/Euoplos
 Atlas of Living Australia: https://bie.ala.org.au/species/https://biodiversity.org.au/afd/taxa/1b5cd7fc-fed7-4788-ac39-b33cafc7bbb4
 Australian Spiders in Colour: https://www.termite.com.au/spider-identification.html
-A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.htm
+A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.html
