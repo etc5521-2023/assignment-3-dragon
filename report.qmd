@@ -137,6 +137,57 @@ save(Euoplos_Rainbow_combined, file = "data-raw/Euoplos_Rainbow.rda")
 
 ```
 
+The dataset titled Euoplos_Rainbow_combined encompasses records associated with the Euoplos Rainbow, more colloquially known as the trapdoor golden spider.
+
+
+```{r}
+# Create a data frame for the table
+data_description <- data.frame(
+  Variable_Name = c("decimalLatitude", "decimalLongitude", "eventDate", "scientificName", "taxonConceptID", 
+                    "recordID", "dataResourceName", "occurrenceStatus", "BASIS_OF_RECORD_INVALID", 
+                    "eventID", "eventTime", "samplingProtocol"),
+  Data_Type = c("Double", "Double", "Date", "Character", "Character", "Character", "Character", "Character", 
+                "Logical", "Character", "Time", "Character"),
+  Description = c("Latitude at which the sighting was recorded.", "Longitude at which the sighting was recorded.", 
+                  "The date when the sighting occurred.", "The scientific name of the species; consistently labeled as 'Euoplos rainbow'.", 
+                  "A unique URL that redirects to the specific taxonomy concept on biodiversity.org.au.", "A distinct identifier for every record in the dataset.", 
+                  "The title of the institution or data resource provider that collected the data.", 
+                  "Denotes the status of the sighting, with a common value being 'PRESENT'.", "A binary marker indicating the validity of the record (TRUE/FALSE).", 
+                  "An identifier for the specific event associated with the sighting. Some records may lack this data ('NA').", 
+                  "The precise time the event or sighting took place. Several records may have this detail omitted ('NA').", 
+                  "The methodology used for sampling or recording the sighting. Techniques vary, such as 'hand' or 'Dug from burrow'. Some entries might be missing this data ('NA').")
+)
+
+# Use kable and kable_styling to display the table
+kable(data_description, format = "html", booktabs = TRUE, caption = "Description of Variables in the `Euoplos_Rainbow_combined` Dataset") %>%
+  kable_styling()
+```
+
+
+The Euoplos_Rainbow_combined dataset encapsulates 1,042 entries and is comprised of 12 variables. The data is derived from multiple sources, as can be discerned from the distinct dataResourceName entries. The main contributor appears to be the Western Australian Museum.
+
+To ensure the dataset's accuracy and relevance, several processing and cleaning steps were executed:
+
+Filtering by Date: Only sightings post-1990 were considered to ensure the relevancy and reliability of the records.
+
+Validity Check: Entries that were deemed unreliable (marked as BASIS_OF_RECORD_INVALID) were filtered out to maintain data integrity.
+
+Date Formatting: The eventDate variable was converted to a standard Date format for uniformity.
+
+Time Formatting: Timezone-specific timestamps were adjusted to a standardized hour:minute:second format. Any 12-hour formatted times were converted to a 24-hour format for consistency.
+
+Merging Data: Multiple datasets were merged based on shared variables like eventDate and recordID to create a comprehensive dataset.
+
+Removing Duplicates: Duplicate entries were identified and removed, ensuring each record in the dataset is unique.
+
+Saving Dataset: After cleaning and formatting, the dataset was saved as an R object to ensure ease of access and repeatability of the analysis.
+
+The dataset was sourced using the galah package in R, which interfaces with the Atlas of Living Australia (ALA). The ALA platform, available at Atlas of Living Australia, served as the primary source of the raw data.
+
+For the analysis in R, libraries such as tidyverse, galah, and lubridate were employed. The galah library was particularly crucial for sourcing the data directly from ALA, while lubridate was instrumental in managing date and time fields. The tidyverse collection of packages enabled data manipulation, cleaning, and visualization.
+
+Before proceeding with any advanced analysis, potential users of this dataset should always check for missing values, outliers, or other anomalies that might affect the results. Given the geospatial nature of the data, considerations for spatial analyses or visualizations could also be relevant.
+
 
 
 ## Initial data analysis
@@ -288,6 +339,36 @@ final_data <- final_data %>%
 ```{r}
 save(final_data, file = "data/final-data.rda")
 ```
+
+
+Initial Data Analysis (IDA) is a critical phase in the data analysis pipeline. It focuses on understanding the structure and properties of the dataset, making preliminary assessments, and determining necessary cleaning and transformation steps before diving deep into exploratory or confirmatory analysis. Let's walk through the code chunks to understand the IDA process for the spider dataset.
+
+Spider Data:
+Filtering Missing Data: The very first step is all about ensuring data quality. By filtering out entries with missing eventDate, Longitude, and Latitude, you're ensuring that subsequent geographical analyses are meaningful and based on complete data.
+
+Human Observations: By focusing on records with basisOfRecord equal to "HUMAN_OBSERVATION", you're making a conscious choice to only include data that comes from direct human observations, which may be perceived as more reliable.
+
+Weather Data:
+Initial Overview: The glimpse() function gives a concise summary of the Euoplos_Rainbow_combined dataset. This is a quick check to understand data types, columns, and the general structure of your dataset.
+
+Data Visualization: With vis_dat(), you're visualizing the data to quickly identify any anomalies, gaps, or unusual patterns that might need attention.
+
+Data Cleaning: You've filtered for only wild sightings and standardized the scientific names to "Euoplos rainbow".
+
+Data Storage: Regularly saving cleaned or processed data is good practice, preserving the integrity of original data and marking stages of data processing.
+
+Weather Station Retrieval: The rnoaa package is utilized to fetch weather station data relevant to the spider data. This is an essential step to correlate spider sightings with weather conditions.
+
+Date and Time Formatting: Several chunks are devoted to converting and standardizing date and time formats, ensuring consistency across datasets.
+
+Merging and Final Data Preparation:
+Data Merging: The spider data is merged with weather data based on event dates. This holistic dataset allows for a combined analysis, enhancing the depth of insights that can be derived later.
+
+Final Touches: Necessary columns are selected, duplicates are removed, and the final dataset is crafted with an intention for comprehensive analysis.
+
+Distance Computations: Calculations are made to determine the proximity of spider sightings to weather stations, allowing for potential correlation studies between spider sightings and weather conditions.
+
+Data Storage: The final, refined data is then stored, ensuring it's ready for any subsequent stages in the data analysis process.
 
 
 ## Exploratory data analysis
