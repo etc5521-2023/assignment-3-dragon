@@ -1,50 +1,63 @@
 ---
-title: "MY WILD THING REPORT"
-author: "YOUR TEAM NAME AND MEMBERS HERE"
-format: html
+title: "Euoplos Rainbow - Golden Trapdoor Spider"
+author: "Team - Dragon, Members - Jay and Justin"
+format: 
+  html:
+    code-fold: true
+    code-summary: "Show the code"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, 
+knitr::opts_chunk$set(echo = F, 
                       warning=FALSE, 
-                      message=FALSE)
+                      message=FALSE,
+                      fig.align = 'center')
 ```  
-  
 
-## Introduction
+# Introduction
+::: {#fig-elephants layout-ncol=2}
 
-<!-- 
-1. For your assigned Australian wild thing, read all you can about it, and write a paragraph describing it's key features, such as it's habitat, usual active time, whether numbers are increasing or declining, and even things like, if it is common for tourists to travel to see them, or there are special spotting promotions occurring as is happening [this month for the platypus](https://platypus.asn.au/report-a-sighting/). The write five unique expectations on what you might find when you explore the data, for example: 
-<br><br>"We expect to see the occurrences only in the summer months."
-<br>"We expect to find the most occurrences near the coast."
-<br>"We expect to observe declining numbers since 1994."
-<br><br> Be as specific as reasonably possible for your wild thing!
--->
+![Golden Trapdoor Spider](image1.jpeg){#fig-img1}
 
-The Australian golden trapdoor spiders of the tribe Euoplini, belonging to the family Idiopidae, are particularly abundant and diverse in subtropical eastern Australia. These spiders, unlike most trapdoor spiders that inhabit tropical regions globally, occupy various habitats ranging from shady riverbanks to open desert areas, showing a preference for steep slopes and loose, sandy soils. They construct burrows with distinctive trapdoor lids, which they use as both shelter and a hunting mechanism. These burrows can be found near water sources, occasionally serving as a means to catch small fish. Typically nocturnal, Euoplos Rainbow and other trapdoor spiders emerge from their burrows at night to hunt for prey, remaining concealed during the day. Information about population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. They are not commonly a target for tourists, and organized promotions or tours to observe them are rare. The name "trapdoor" spider originates from their burrows, which have hinged or camouflaged door-like lids, serving as concealed traps for unsuspecting prey. 
+![Golden Trapdoor Spider](image2.jpeg){#fig-img2}
 
-Unique expectations for exploring the data on Euoplos Rainbow sightings could include:
+Euoplos Rainbow
+:::
 
-1. "We expect to observe a higher concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, given their abundance in this region."
-   
-2. "We expect to find a variety of habitat preferences in the data, ranging from riverbanks to desert areas, reflecting the adaptability of Euoplos Rainbow."
+Genus Euoplos Rainbow, belonging to the family Idiopidae, is a fascinating group of armored trapdoor spiders endemic to Australia. First described by William Joseph Rainbow in 1914, this genus comprises 14 recognized species. These spiders typically range in size from 10 to 25 mm and are characterized by their heavily armored carapaces and opisthosomae. While their carapaces tend to be dark in color, their opisthosomae can display striking patterns and vibrant colors.
 
-3. "We anticipate that the majority of sightings will occur during nighttime hours, consistent with the nocturnal behavior of trapdoor spiders."
+Euoplos spiders are nocturnal hunters, primarily active during the night, emerging from their burrows to capture prey. Their burrows, often constructed in sandy or loamy soil, feature a hinged lid that serves as both protection and a concealed trap for unsuspecting prey. They are versatile predators, preying on a variety of insects and invertebrates with their powerful fangs.
 
-4. "We do not expect to see a significant number of sightings linked to tourism, as trapdoor spiders are not typically considered tourist attractions."
+These spiders can be found in diverse habitats across Australia, including forests, woodlands, grasslands, and deserts. Their preference for dry, open habitats is particularly noteworthy.
 
-5. "We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging."
+Information about the population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. Some species may face threats from habitat loss, degradation, and competition from introduced spider species, but more research is needed to determine their conservation status.
 
-## Data description
+In terms of expectations for exploring data on Euoplos Rainbow sightings, some unique possibilities include:
 
-<!--
-2. Download all the occurrence records from the Atlas of Living Australia, ideally scripted using the `atlas_occurrences()` function from the `galah` package. Make sure you include date, time, collector identification details. Save this into a `data-raw` folder in your repo.
--->
+1. We expect to observe a concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, reflecting their abundance in this region.
+
+2. We anticipate that Euoplos Rainbow sightings are more likely to occur during hot and dry weather, particularly in the summer season.
+
+3. Given their nocturnal behavior, we expect the majority of sightings to occur during nighttime hours.
+
+4. We expect to observe a declining trend in Euoplos Rainbow sightings due to their endangered status.
+
+5. We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging
+
+These expectations provide a basis for exploring and analyzing the data on Euoplos Rainbow sightings while considering their unique biology and habitat preferences.
+
 
 ```{r}
 library(lubridate)
 library(galah)
 library(tidyverse)
+```
+
+# Data Cleaning
+
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Load raw data"
 galah_config(email = "jaysangani04@gmail.com")
 Euoplos_Rainbow <- galah_call() |>
   galah_identify("Euoplos Rainbow") |>
@@ -54,7 +67,12 @@ Euoplos_Rainbow <- galah_call() |>
 Euoplos_Rainbow <- Euoplos_Rainbow %>%
   filter(eventDate >= as.Date("1990-01-01"))
 
-# Filter out unreliable sightings (BASIS_OF_RECORD_INVALID)
+save(Euoplos_Rainbow, file = "data-raw/Euoplos_Rainbow.rda")
+```
+
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Filter out unreliable sightings (BASIS_OF_RECORD_INVALID)"
 Euoplos_Rainbow_assert <- galah_call() |>
   galah_identify("Euoplos Rainbow") |>
   galah_select( group = "assertions") |>
@@ -65,16 +83,18 @@ Euoplos_Rainbow_event <- galah_call() |>
   galah_identify("Euoplos Rainbow") |>
   galah_select(basisOfRecord, group = "event") |>
   atlas_occurrences()
-
 ```
 
-```{r}
-# Convert eventDate to Date format without the time component
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Convert eventDate to Date format without the time component"
 Euoplos_Rainbow$eventDate <- as.Date(Euoplos_Rainbow$eventDate)
 Euoplos_Rainbow_event$eventDate <- as.Date(Euoplos_Rainbow_event$eventDate)
 ```
 
-```{r}
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Working with format of time variable"
 # Convert timezone-specific times to plain hour:minute:second format
 timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", Euoplos_Rainbow_event$eventTime)
 Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
@@ -84,15 +104,14 @@ plain_time_format <- grepl("^[0-9]{2}:[0-9]{2}$", Euoplos_Rainbow_event$eventTim
 Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_event$eventTime[plain_time_format], ":00")
 ```
 
-```{r}
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Perform merging and filtering"
 # Merging based on eventDate
 Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate", keep.all=TRUE)
 
 # Merging the result with Euoplos_Rainbow_assert based on recordID
 Euoplos_Rainbow_3 <- merge(Euoplos_Rainbow_2, Euoplos_Rainbow_assert, by="recordID", keep.all=TRUE)
-
-#all=TRUE argument ensures a full outer join, keeping all rows from both data frames in the result, even if there's no matching recordID.
-
 
 # Convert 12-hour format to 24-hour format
 twelve_hour_format <- grepl("[APM]{2}", Euoplos_Rainbow_event$eventTime, ignore.case=TRUE)
@@ -110,7 +129,7 @@ Euoplos_Rainbow_3$eventTime <- sapply(Euoplos_Rainbow_3$eventTime, convert_time)
 
 #selecting neccesory variables
 Euoplos_Rainbow_3 <- Euoplos_Rainbow_3 %>% 
-  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventID, eventTime, basisOfRecord)
+  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventTime, basisOfRecord)
 
 #removing duplicates from the dataset
 Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>% 
@@ -122,55 +141,91 @@ final_Euoplos_Rainbow <- Euoplos_Rainbow_combined %>%
   filter(basisOfRecord == "HUMAN_OBSERVATION")
 ```
 
-```{r}
-# Save data as an R object in the "data-raw" folder
-save(spider, file = "data-raw/spider.rda")
-```
-
-## Initial data analysis
-
-<!--
-3. Perform a data quality check, and then go ahead and clean the data, saving only the wild sightings. Save the resulting data in a `data` folder as an `WILD_THING_COMMON_NAME.rda` file, so that any special variable types are clearly available. (Replace `WILD_THING_COMMON_NAME` with lower case common name of your assigned wild thing.) *Note:* Some are museum or historical records or live in an animal sanctuary or zoo, which do not truly capture their wild behaviour. Downloading the event information (`galah_select(group = "event")`) can help identify wild sightings.
-
-Weather data pre-processing here too.
--->
-
-```{r}
-visdat::vis_dat(final_Euoplos_Rainbow)
+```{r, eval = F, echo = T}
+#| code-fold: true
+#| code-summary: "Save final clean data"
+save(final_Euoplos_Rainbow, file = "data/final_Euoplos_Rainbow.rda")
 ```
 
 ```{r}
-Euoplos_Rainbow_combined$eventYear <- year(Euoplos_Rainbow_combined$eventDate)
-
-Euoplos_Rainbow_combined %>%
-  group_by(eventYear) %>%
-  summarise(count = n()) %>%
-  ggplot(aes(x = eventYear, count)) +
-  geom_line()
+load("data-raw/Euoplos_Rainbow.rda")
+load("data/final_Euoplos_Rainbow.rda")
 ```
 
+# Data Description
 
 ```{r}
-final_Euoplos_Rainbow$eventHour <- hour(final_Euoplos_Rainbow$eventTime)
+library(kableExtra)
+# Create a data frame for the table
+data_description <- data.frame(
+  Variable_Name = c("decimalLatitude", "decimalLongitude", "eventDate", "scientificName", "taxonConceptID", 
+                    "recordID", "dataResourceName", "occurrenceStatus", "BASIS_OF_RECORD_INVALID", 
+                     "eventTime", "basisOfRecord"),
+  Data_Type = c("Double", "Double", "Date", "Character", "Character", "Character", "Character", "Character", 
+                "Logical", "Time", "Character"),
+  Description = c("Latitude at which the sighting was recorded.", 
+                  "Longitude at which the sighting was recorded.", 
+                  "The date when the sighting occurred.", 
+                  "The scientific name of the species; consistently labeled as 'Euoplos rainbow'.", 
+                  "A unique URL that redirects to the specific taxonomy concept on biodiversity.org.au.", 
+                  "A distinct identifier for every record in the dataset.", 
+                  "The title of the institution or data resource provider that collected the data.", 
+                  "Denotes the status of the sighting, with a common value being 'PRESENT'.", 
+                  "A binary marker indicating the validity of the record (TRUE/FALSE).", 
+                  "The precise time the event or sighting took place. Several records may have this detail omitted ('NA').", 
+                  "Filter to only HUMAN_OBSERVATION value to ensure all data is wild sightings, original variable also include value of PRESERVED_SPECIMEN")
+)
 
-final_Euoplos_Rainbow %>%
-  ggplot(aes(x = eventHour)) +
-  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
-  labs(title = "Distribution of Spider Sightings by Hour of the Day",
-       x = "Hour of the Day",
-       y = "Frequency") +
-  theme_minimal()
+# Use kable and kable_styling to display the table
+kable(data_description, format = "html", booktabs = TRUE, caption = "Description of Variables in the `final_Euoplos_Rainbow` Dataset") %>%
+  kable_styling()
 ```
 
-If considered nighttime hours to be between 6pm and 12am, surprisingly, most sightings of Euoplos Rainbow happens during daytime, which is contrast to initial statement.
+::: {.callout-note}
+The Euoplos_Rainbow_combined dataset encapsulates 1,042 entries and is comprised of 12 variables. The data is derived from multiple sources, as can be discerned from the distinct dataResourceName entries. The main contributor appears to be the Western Australian Museum.
 
+To ensure the dataset's accuracy and relevance, several processing and cleaning steps were executed:
 
-########################### IDA on weather #####################################
+* **Filtering by Date**: Only sightings post-1990 were considered to ensure the relevancy and reliability of the records.
 
+* **Validity Check**: Entries that were deemed unreliable (marked as BASIS_OF_RECORD_INVALID) were filtered out to maintain data integrity.
+
+* **Date Formatting**: The eventDate variable was converted to a standard Date format for uniformity.
+
+* **Time Formatting**: Timezone-specific timestamps were adjusted to a standardized hour:minute:second format. Any 12-hour formatted times were converted to a 24-hour format for consistency.
+
+* **Merging Data**: Multiple datasets were merged based on shared variables like eventDate and recordID to create a comprehensive dataset.
+
+* **Removing Duplicates**: Duplicate entries were identified and removed, ensuring each record in the dataset is unique.
+
+* **Saving Dataset**: After cleaning and formatting, the dataset was saved as an R object to ensure ease of access and repeatability of the analysis.
+
+The dataset was sourced using the galah package in R, which interfaces with the Atlas of Living Australia (ALA). The ALA platform, available at Atlas of Living Australia, served as the primary source of the raw data.
+
+For the analysis in R, libraries such as tidyverse, galah, and lubridate were employed. The galah library was particularly crucial for sourcing the data directly from ALA, while lubridate was instrumental in managing date and time fields. The tidyverse collection of packages enabled data manipulation, cleaning, and visualization.
+
+Before proceeding with any advanced analysis, potential users of this dataset should always check for missing values, outliers, or other anomalies that might affect the results. Given the geospatial nature of the data, considerations for spatial analyses or visualizations could also be relevant.
+:::
+
+# Initial data analysis
+
+## Euoplos Rainbow data
+
+```{r}
+library(visdat)
+vis_dat(final_Euoplos_Rainbow)
+```
+
+::: {.callout-note}
+* **Data Quality Enhancement**: The initial stage of our data processing involves the critical task of data quality enhancement. This process primarily consists of filtering out entries with missing values in key fields, including eventDate, Longitude, and Latitude. By taking this step, we are committed to ensuring that our subsequent geographical analyses are conducted with meaningful and comprehensive data.
+
+* **Emphasis on Human Observations**: In our data refinement approach, special attention is given to records where the basisOfRecord is explicitly labeled as "HUMAN_OBSERVATION." This deliberate selection criteria signify our preference for incorporating data sourced directly from human observations, which is often regarded as a more reliable data source.
+:::
+
+## Weather data
 ```{r}
 ## Load in data for weather
 library(rnoaa)
-library(tidyverse)
 aus_stations <- ghcnd_stations() |>
   filter(str_starts(id, "ASN")) |>
   filter(last_year >= 2020) |>
@@ -183,7 +238,6 @@ aus_stations <- ghcnd_stations() |>
   filter(nrow(data) == 3) |>
   select(-data) 
 ```
-
 
 ```{r, echo = F}
 # group point into 4 clusters
@@ -221,6 +275,8 @@ final_Euoplos_Rainbow$cluster <- mapply(assign_to_group, final_Euoplos_Rainbow$d
 ```
 
 ```{r}
+#| label: fig-station
+#| fig-cap: "Weather stations with 4 groups on map"
 library(ozmaps)
 library(ggrepel)
 
@@ -254,8 +310,13 @@ gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
 gg + coord_sf(ylim = c(-29, -26.5), xlim = c(152, 155)) 
 ```
 
-### Logan city water treatment (ASN00040854)
+::: {.callout-note}
+Initially, as shown in @fig-station, I divided the majority of Eastern Australia sightings into four distinct clusters and then matched each cluster with the nearest weather station. Any remaining sightings were categorized under the "Other" group. Consequently, for Group 1 through Group 4, the corresponding weather stations are Maroochydore Aero, Brisbane, Logan City Water Treatment, and Murwillumbah (Bray Park), respectively.
+:::
+
+
 ```{r}
+### Logan city water treatment (ASN00040854)
 logan_city <- aus_stations |>
   filter(id == "ASN00040854") |>
   rowwise() |>
@@ -268,15 +329,11 @@ logan_city <- aus_stations |>
   select(id, long, lat, elev, name, wmo_id, ts) %>%
   unnest(ts) |>
   mutate(tmax = tmax/10, tmin = tmin/ 10)
-
-joined_logan_city <- logan_city %>% left_join(final_Euoplos_Rainbow, by = c("date" = "eventDate"))
-
-ggplot(joined_logan_city, aes(x = prcp)) +
-  geom_histogram(fill = "blue")
 ```
 
-### maroochydore aero (ASN00040861)
+
 ```{r}
+### maroochydore aero (ASN00040861)
 maroochydore <- aus_stations |>
   filter(id == "ASN00040861") |>
   rowwise() |>
@@ -289,13 +346,10 @@ maroochydore <- aus_stations |>
   select(id, long, lat, elev, name, wmo_id, ts) %>%
   unnest(ts) |>
   mutate(tmax = tmax/10, tmin = tmin/ 10)
-
-ggplot(maroochydore, aes(x = tmin)) +
-  geom_histogram(fill = "blue")
 ```
 
-### brisbane (ASN00040913) 
 ```{r}
+### brisbane (ASN00040913) 
 brisbane <- aus_stations |>
   filter(id == "ASN00040913") |>
   rowwise() |>
@@ -308,13 +362,10 @@ brisbane <- aus_stations |>
   select(id, long, lat, elev, name, wmo_id, ts) %>%
   unnest(ts) |>
   mutate(tmax = tmax/10, tmin = tmin/ 10)
-
-ggplot(brisbane, aes(x = prcp)) +
-  geom_histogram(fill = "blue")
 ```
 
-### murwillumbah (bray park) (ASN00058158)
 ```{r}
+### murwillumbah (bray park) (ASN00058158)
 murwillumbah <- aus_stations |>
   filter(id == "ASN00058158") |>
   rowwise() |>
@@ -327,12 +378,15 @@ murwillumbah <- aus_stations |>
   select(id, long, lat, elev, name, wmo_id, ts) %>%
   unnest(ts) |>
   mutate(tmax = tmax/10, tmin = tmin/ 10)
-
-ggplot(murwillumbah, aes(x = prcp)) +
-  geom_histogram(fill = "blue")
 ```
 
+::: {.callout-note}
+Subsequently, I will individually narrow down the year range for each weather station, focusing on the periods when the majority of sightings occurred. This step is essential to ensure that weather-related data, such as precipitation, maximum temperature, and minimum temperature, are relevant to the analysis. I will achieve this by first identifying the respective cluster assigned to each weather station, combining the relevant datasets, and utilizing line plots to visually depict the years when sightings were recorded for each specific weather station.
+:::
+
 ```{r}
+#| label: fig-station-year
+#| fig-cap: "Year range where most sightings occur for each weather station"
 # Assuming you have a dataset named final_Euoplos_Rainbow
 final_Euoplos_Rainbow <- final_Euoplos_Rainbow %>%
   mutate(year = year(eventDate))
@@ -376,8 +430,11 @@ combined_plot <- plot_maroochydore +
   plot_murwillumbah
 
 combined_plot
-
 ```
+
+::: {.callout-note}
+As illustrated in @fig-station-year above, the primary sightings took place during the following periods: Maroochydore station from 2016 to 2023, Brisbane stations from 2020 to 2023, Logan City Water Treatment station from 2020 to 2023, and Murwillumbah station from 2018 to 2023, with a noticeable gap between 2019 and 2022. Consequently, our approach will involve filtering the data for all four weather stations based on these specific year ranges and subsequently performing a left join with the Euoplos Rainbow dataset.
+:::
 
 ```{r}
 maroochydore <- maroochydore %>% mutate(year = year(date)) %>% filter(year > 2016)
@@ -388,29 +445,41 @@ murwillumbah <- murwillumbah %>% mutate(year = year(date)) %>% filter(year > 201
 
 ```{r}
 joined_maroochydore <- maroochydore %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 1"), by = c("date" = "eventDate"))
+  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 1"), 
+            by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
+  mutate(sighting = as.factor(sighting))
+vd_maroo <- vis_dat(joined_maroochydore)
 
 joined_brisbane <- brisbane %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 2"), by = c("date" = "eventDate"))
+  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 2"), 
+            by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
+  mutate(sighting = as.factor(sighting))
+vd_bris <- vis_dat(joined_brisbane)
 
 joined_logan_city <- logan_city %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 3"), by = c("date" = "eventDate"))
+  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 3"), 
+            by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
+  mutate(sighting = as.factor(sighting))
+vd_lc <- vis_dat(joined_logan_city)
 
 joined_murwillumbah <- murwillumbah %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 4"), by = c("date" = "eventDate"))
+  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 4"), 
+            by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
+  mutate(sighting = as.factor(sighting))
+vd_mur <- vis_dat(joined_murwillumbah)
 ```
 
+# Exploratory data analysis
 
-## Exploratory data analysis
+## 1. Most sightings occur in the Eastern Australia
 
-<!--
-4. Make plots of the data to check each of your expectations, and report what you learn. *Note:* This might also be a place where visual inference methods *may* be useful to determine if what is seen agrees or disputes what you expected. 
-
-Weather data exploration here too.
--->
-
-# Eastern Australia
 ```{r}
+#| label: fig-fullmap
+#| fig-cap: "All sightings on Australia map"
 gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
   geom_point(data = final_Euoplos_Rainbow,
                       mapping = aes(x = decimalLongitude,
@@ -425,10 +494,267 @@ gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
 gg
 ```
 
+::: {.callout-note}
+As depicted in @fig-fullmap, our initial expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
+:::
+
+## 2. Most sightings occur during hot and dry weather, particularly in the summer season.
+
+### Maroochydore aero
+```{r}
+#| label: fig-pcpmaroo
+#| fig-cap: "Maroochydore station weather on successful sighting days"
+library(colorspace)
+library(plotly)
+
+# Set our colours for the par coords, and also tour
+clrs <- divergingx_hcl(palette="Zissou 1", n=2)
+
+maroochydore_pcp <- joined_maroochydore %>%
+  plot_ly(type = 'parcoords', 
+            line = list(color = ~sighting,
+                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
+                                  )),
+            dimensions = list(
+            list(range = c(0,1),
+                 label = 'sighting', values = ~sighting),
+            list(range = c(1,12),
+                 label = 'month', values = ~month(date)),
+            list(range = c(0,2944),
+                 label = 'precipitation', values = ~prcp),
+            list(range = c(0.2,27.3),
+                 label = 'min_temp', values = ~tmin),
+            list(range = c(13.4,39.2),
+                 label = 'max_temp', values = ~tmax)
+            )
+          ) %>%
+  layout(title = "How is Maroochydore station weather on successful sighting days?")
+
+maroochydore_pcp
+```
+
+### Brisbane
+
+```{r}
+#| label: fig-pcpbrisbane
+#| fig-cap: "Brisbane station weather on successful sighting days"
+brisbane_pcp <- joined_brisbane %>%
+  plot_ly(type = 'parcoords', 
+            line = list(color = ~sighting,
+                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
+                                  )),
+            dimensions = list(
+            list(range = c(0,1),
+                 label = 'sighting', values = ~sighting),
+            list(range = c(1,12),
+                 label = 'month', values = ~month(date)),
+            list(range = c(0,2944),
+                 label = 'precipitation', values = ~prcp),
+            list(range = c(0.2,27.3),
+                 label = 'min_temp', values = ~tmin),
+            list(range = c(13.4,39.2),
+                 label = 'max_temp', values = ~tmax)
+            )
+          ) %>%
+  layout(title = "How is Brisbane station weather on successful sighting days?")
+
+brisbane_pcp
+```
+
+### Logan city water treatment
+```{r}
+#| label: fig-pcplogan
+#| fig-cap: "Logan city station weather on successful sighting days"
+logan_city_pcp <- joined_logan_city %>%
+  plot_ly(type = 'parcoords', 
+            line = list(color = ~sighting,
+                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
+                                  )),
+            dimensions = list(
+            list(range = c(0,1),
+                 label = 'sighting', values = ~sighting),
+            list(range = c(1,12),
+                 label = 'month', values = ~month(date)),
+            list(range = c(0,2944),
+                 label = 'precipitation', values = ~prcp),
+            list(range = c(0.2,27.3),
+                 label = 'min_temp', values = ~tmin),
+            list(range = c(13.4,39.2),
+                 label = 'max_temp', values = ~tmax)
+            )
+          ) %>%
+  layout(title = "How is Logan city station weather on successful sighting days?")
+
+logan_city_pcp
+```
+
+### Murwillumbah (bray park)
+```{r}
+#| label: fig-pcpmur
+#| fig-cap: "Murwillumbah station weather on successful sighting days"
+murwillumbah_pcp <- joined_murwillumbah %>%
+  plot_ly(type = 'parcoords', 
+            line = list(color = ~sighting,
+                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
+                                  )),
+            dimensions = list(
+            list(range = c(0,1),
+                 label = 'sighting', values = ~sighting),
+            list(range = c(1,12),
+                 label = 'month', values = ~month(date)),
+            list(range = c(0,2944),
+                 label = 'precipitation', values = ~prcp),
+            list(range = c(0.2,27.3),
+                 label = 'min_temp', values = ~tmin),
+            list(range = c(13.4,39.2),
+                 label = 'max_temp', values = ~tmax)
+            )
+          ) %>%
+  layout(title = "How is murwillumbah station weather on successful sighting days?")
+
+murwillumbah_pcp
+```
+
+::: {.callout-note}
+As observed in the four plots displayed above, namely @fig-pcpmaroo, @fig-pcpbrisbane, @fig-pcplogan, and @fig-pcpmur, a consistent weather pattern emerges on days when sightings of Euoplos Rainbow occur. These patterns indicate predominantly dry weather with minimal to no rainfall, aligning with our initial expectations. However, when examining the minimum and maximum temperatures, they typically fall within the ranges of 10 to 20 degrees Celsius for minimum temperature and 20 to 30 degrees Celsius for maximum temperature. This observation contrasts with our initial assumption of hot weather and is more akin to the conditions typically experienced during the fall season.
+:::
+
+## 3. The majority of sightings to occur during nighttime hours.
+
+```{r}
+#| label: fig-time
+#| fig-cap: "Distribution of Spider Sightings by Hour of the Day"
+final_Euoplos_Rainbow$eventHour <- hour(final_Euoplos_Rainbow$eventTime)
+
+final_Euoplos_Rainbow %>%
+  ggplot(aes(x = eventHour)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(title = "Distribution of Spider Sightings by Hour of the Day",
+       x = "Hour of the Day",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+::: {.callout-note}
+As depicted in the @fig-time plot, it is worth noting that, surprisingly, the majority of Euoplos Rainbow sightings occur during daytime hours, 8:00 am to 3:00 pm which contradicts our initial assumption of predominantly nighttime activity. However, this unexpected finding can be attributed to the fact that fewer people venture outdoors during the night, reducing the chances of spotting a trapdoor spider. Consequently, we maintain our initial expectation that the primary active period for these spiders is during nighttime hours.
+:::
+
+## 4. We expect to observe a declining trend in Euoplos Rainbow sightings due to their endangered status.
+
+```{r}
+#| label: fig-overtime
+#| fig-cap: "Number of successful sightings over time"
+final_Euoplos_Rainbow %>%
+  group_by(year) %>%
+  summarise(Sightings = n()) %>%
+  ggplot(aes(year, Sightings)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Year", y = "Number of Sightings", title = "Number of successful sightings over time")
+```
+
+::: {.callout-note}
+As illustrated in the @fig-overtime plot, we observe a relatively low number of sightings before 2020, followed by a notable surge from the latter part of 2019, peaking in 2021. This phenomenon can be attributed to the peak of the Covid-19 pandemic during this period, which resulted in reduced human interference in natural habitats. Consequently, many species, including the Euoplos Rainbow, had the opportunity to return to their natural habitats, where they are typically found. Therefore, while this trend doesn't align with the expected decrease in sightings, it is indeed positive news for the endangered Euoplos Rainbow and its habitat.
+:::
+
+## 5. We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging.
+
+::: {.callout-note}
+This can be readily confirmed by examining the dataset for Euoplos Rainbow, which contains a total of `r nrow(final_Euoplos_Rainbow)` rows. It's important to note that these observations represent wild sightings, excluding any data from museums, historical records, or animals living in sanctuaries or zoos. When comparing this figure to the overall number of sightings in the initial dataset of `r nrow(Euoplos_Rainbow)` which encompasses both wild and non-wild observations, it becomes evident that the dataset is indeed limited in scope.
+:::
+
+# Summary 
+
+::: {.callout-note}
+In summary, our exploratory data analysis (EDA) of Euoplos Rainbow sightings has revealed several intriguing findings, often challenging our initial expectations:
+
+* **Geographical Distribution**: Our initial expectation of a concentration of sightings in eastern Australia, particularly in Queensland and New South Wales, has been validated. The presence of Euoplos Rainbow in South Australia was also a noteworthy discovery.
+
+* **Weather Patterns**: The weather conditions on days when Euoplos Rainbow sightings occur are predominantly dry with minimal rainfall, aligning with our initial anticipation. However, the temperature range is more moderate than expected, resembling conditions typical of the fall season.
+
+* **Activity Hours**: Surprisingly, Euoplos Rainbow sightings are more common during daytime hours, which contradicts our initial assumption of nocturnal behavior. This observation is explained by reduced human activity outdoors at night.
+
+* **Temporal Trends**: Instead of a decreasing trend in sightings, as expected for an endangered species, we observed a surge in sightings during the peak of the Covid-19 pandemic. Reduced human interference in natural habitats likely allowed these spiders to thrive.
+
+* **Limited Data**: The dataset for Euoplos Rainbow consists mainly of wild sightings, and when compared to the broader dataset, it becomes clear that data availability for this species is limited.
+
+These findings underscore the complexity of species behavior and the influence of external factors. While some expectations were confirmed, others challenged our assumptions, emphasizing the importance of data-driven insights in ecological research.
+:::
+
+# References
 
 
+1. Australian Faunal Directory. (n.d.). Euoplos. https://biodiversity.org.au/afd/taxa/Euoplos
+
+2. Atlas of Living Australia. (n.d.). Euoplos. https://bie.ala.org.au/species/https://biodiversity.org.au/afd/taxa/1b5cd7fc-fed7-4788-ac39-b33cafc7bbb4
+
+3. Australian Spiders in Colour. (n.d.). Spider Identification. https://www.termite.com.au/spider-identification.html
+
+4. Find-a-spider Guide. (n.d.). A Photographic Guide to Australian Spiders. http://www.findaspider.org.au/find/spiders/409.htm
 
 
-## Summary 
+::: {.callout-caution collapse="true"}
+# Package Citation
 
-## References
+## tidyverse
+
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L,
+Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu
+V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of
+Open Source Software_, *4*(43), 1686. doi: 10.21105/joss.01686 (URL:
+https://doi.org/10.21105/joss.01686).
+
+## galah
+
+Westgate M, Stevenson M, Kellie D, Newman P (2023). _galah: Atlas of Living Australia (ALA) Data and
+Resources in R_. R package version 1.5.2, <URL: https://CRAN.R-project.org/package=galah>.
+
+## visdat
+
+Tierney N (2017). “visdat: Visualising Whole Data Frames.” _JOSS_, *2*(16), 355. doi:
+10.21105/joss.00355 (URL: https://doi.org/10.21105/joss.00355), <URL:
+http://dx.doi.org/10.21105/joss.00355>.
+
+## rnoaa
+
+Scott Chamberlain and Daniel Hocking (2023). rnoaa: 'NOAA' Weather Data from R. R package version
+  1.4.0. https://CRAN.R-project.org/package=rnoaa
+  
+## lubridate
+
+Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy with lubridate. Journal of
+  Statistical Software, 40(3), 1-25. URL https://www.jstatsoft.org/v40/i03/.
+  
+## ozmaps
+
+Michael Sumner (2021). ozmaps: Australia Maps. R package version 0.4.5.
+  https://CRAN.R-project.org/package=ozmaps
+  
+## patchwork
+
+Thomas Lin Pedersen (2023). patchwork: The Composer of Plots. R package version 1.1.3.
+  https://CRAN.R-project.org/package=patchwork
+
+## ggrepel
+
+Kamil Slowikowski (2023). ggrepel: Automatically Position Non-Overlapping Text Labels with 'ggplot2'.
+  R package version 0.9.3. https://CRAN.R-project.org/package=ggrepel
+
+## colorspace
+
+Zeileis A, Fisher JC, Hornik K, Ihaka R, McWhite CD, Murrell P, Stauffer R, Wilke CO (2020).
+“colorspace: A Toolbox for Manipulating and Assessing Colors and Palettes.” _Journal of Statistical
+Software_, *96*(1), 1-49. doi: 10.18637/jss.v096.i01 (URL: https://doi.org/10.18637/jss.v096.i01).
+
+## plotly
+
+C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC
+  Florida, 2020.
+  
+## kableExtra
+
+Hao Zhu (2021). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package version
+  1.3.4. https://CRAN.R-project.org/package=kableExtra
+
+:::
+
