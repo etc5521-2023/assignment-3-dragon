@@ -74,7 +74,8 @@ Euoplos_Rainbow_event <- galah_call() |>
   galah_select(group = "event") |>
   atlas_occurrences()
 
-```
+```   
+
 
 ```{r converting date format}
 # Convert eventDate to Date format without the time component
@@ -147,9 +148,24 @@ Weather data pre-processing here too.
 -->
 
 ```{r}
+glimpse(Euoplos_Rainbow_combined)
+```
+
+```{r}
+library(visdat)
+vis_dat(Euoplos_Rainbow_combined)
+```
+
+
+
+```{r}
 # Filter for wild sightings
 wild_sightings <- Euoplos_Rainbow_combined %>%
   filter(!is.na(samplingProtocol))
+
+Euoplos_Rainbow_combined <- Euoplos_Rainbow_combined %>%
+  mutate(scientificName = "Euoplos rainbow")
+
 ```
 
 ```{r}
@@ -281,6 +297,99 @@ save(final_data, file = "data/final-data.rda")
 
 Weather data exploration here too.
 -->
+
+```{r}
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+```
+
+```{r}
+australia <- ne_countries(scale = "medium", returnclass = "sf", country = "Australia")
+```
+
+```{r}
+ggplot(data = australia) +
+  geom_sf(fill = "lightgray") +
+  geom_jitter(data = wild_sightings, aes(x = decimalLongitude, y = decimalLatitude), color = "red", alpha = 0.5) +
+  labs(title = "Occurrences of Euoplos in Australia") +
+  theme_minimal()
+
+```
+It is clear that Euoplos occurs both in the northern region of Australia (about 10°S latitude) and along the eastern coast, which stretches from around 20°S to just below 40°S latitude.
+
+There is a notable concentration of Euoplos occurrences in the subtropical eastern Australian region, which is located between around 23°S (near Rockhampton) and 31°S (around Coffs Harbour). These sightings occur along Australia's east coast within the specified latitude range.
+
+In conclusion, it appears from this map that your hypothesis is confirmed: there is a concentration of Euoplos occurrences in subtropical eastern Australia.
+
+```{r}
+# Compute the count of Euoplos Rainbow sightings for each year
+euoplos_sightings_trends <- Euoplos_Rainbow_combined %>%
+  mutate(year = lubridate::year(eventDate)) %>%  # Extract year from eventDate
+  group_by(year) %>%
+  summarise(sightings = n())
+
+# Create a time series plot for sightings trends
+sightings_trends_plot <- ggplot(euoplos_sightings_trends, aes(x = year, y = sightings)) +
+  geom_line(color = "red") +
+  labs(title = "Sightings Trends of Euoplos Rainbow Over Time",
+       x = "Year", y = "Sightings Count") +
+  theme_minimal()
+
+# Display the sightings trends plot
+print(sightings_trends_plot)
+```
+```{r}
+final_data <- final_data %>%
+  mutate(weather_condition = ifelse((tmax > 30 | prcp > 50), "Extreme", "Not Extreme"))
+
+# Create a bar plot to compare sightings on days with extreme vs. non-extreme weather
+sightings_by_weather <- final_data %>%
+  group_by(extreme_weather) %>%
+  summarise(avg_sighting = mean(sighting))
+
+# Create the bar plot
+weather_sightings_plot <- ggplot(sightings_by_weather, aes(x = extreme_weather, y = avg_sighting)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Average Sightings by Weather Condition",
+       x = "Weather Condition", y = "Average Sightings") +
+  theme_minimal()
+
+# Display the plot
+print(weather_sightings_plot)
+```
+
+```{r}
+library(lubridate)
+
+# Extract month from the eventDate and group by month to get counts
+monthly_sightings <- wild_sightings %>%
+  mutate(month = month(eventDate, label = TRUE)) %>%
+  group_by(month) %>%
+  summarise(count = sum(sighting))
+
+# Plotting the data
+ggplot(monthly_sightings, aes(x = month, y = count)) +
+  geom_line(aes(group = 1), color = "blue") + 
+  geom_point(color = "red") +
+  labs(title = "Monthly Sighting Counts", x = "Month", y = "Sighting Count") +
+  theme_minimal()
+```
+
+
+
+
+
+
+```{r random sample}
+ggplot(Euoplos_Rainbow_combined, aes(x = samplingProtocol)) +
+  geom_bar(fill = "green") +
+  labs(title = "Comparison of Sampling Protocols for Euoplos Rainbow Sightings", x = "Sampling Protocol", y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
 
 ## Summary 
 
