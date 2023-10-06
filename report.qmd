@@ -58,7 +58,106 @@ spider <- spider %>%
 save(spider, file = "data-raw/spider.rda")
 ```
 
+
 # Initial data analysis
+
+```{r Libraries}
+library(tidyverse)
+library(galah)
+library(lubridate)
+```
+
+
+```{r loading the data and filtering}
+
+galah_config(email = "jaysangani04@gmail.com")
+Euoplos_Rainbow <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  atlas_occurrences()
+
+# Filter records based on date (reliable sightings after 1990)
+Euoplos_Rainbow <- Euoplos_Rainbow %>%
+  filter(eventDate >= as.Date("1990-01-01"))
+
+# Filter out unreliable sightings (BASIS_OF_RECORD_INVALID)
+Euoplos_Rainbow_assert <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select(group = "assertions") |>
+  atlas_occurrences() %>%
+  filter(BASIS_OF_RECORD_INVALID != "TRUE")
+
+Euoplos_Rainbow_event <- galah_call() |>
+  galah_identify("Euoplos Rainbow") |>
+  galah_select(group = "event") |>
+  atlas_occurrences()
+
+```   
+
+
+```{r converting date format}
+# Convert eventDate to Date format without the time component
+Euoplos_Rainbow$eventDate <- as.Date(Euoplos_Rainbow$eventDate)
+Euoplos_Rainbow_event$eventDate <- as.Date(Euoplos_Rainbow_event$eventDate)
+
+```
+
+```{r converting time}
+# Convert timezone-specific times to plain hour:minute:second format
+timezone_format <- grepl("\\+[0-9]{2}:[0-9]{2}|Z", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[timezone_format] <- substr(Euoplos_Rainbow_event$eventTime[timezone_format], 1, 8)
+
+# For plain hour:minute, append ":00" to make it hour:minute:second
+plain_time_format <- grepl("^[0-9]{2}:[0-9]{2}$", Euoplos_Rainbow_event$eventTime)
+Euoplos_Rainbow_event$eventTime[plain_time_format] <- paste0(Euoplos_Rainbow_event$eventTime[plain_time_format], ":00")
+```
+
+
+```{r formating time, merging & saving dataset}
+# Merging based on eventDate
+Euoplos_Rainbow_2 <- merge(Euoplos_Rainbow, Euoplos_Rainbow_event, by="eventDate", all=TRUE)
+
+# Merging the result with Euoplos_Rainbow_assert based on recordID
+Euoplos_Rainbow_3 <- merge(Euoplos_Rainbow_2, Euoplos_Rainbow_assert, by="recordID", all=TRUE)
+
+#all=TRUE argument ensures a full outer join, keeping all rows from both data frames in the result, even if there's no matching recordID.
+
+
+# Convert 12-hour format to 24-hour format
+twelve_hour_format <- grepl("[APM]{2}", Euoplos_Rainbow_event$eventTime, ignore.case=TRUE)
+Euoplos_Rainbow_event$eventTime[twelve_hour_format] <- format(strptime(Euoplos_Rainbow_event$eventTime[twelve_hour_format], format="%I:%M %p"), "%H:%M:%S")
+
+#converting time from AM/PM to HH:MM:SS
+convert_time <- function(time) {
+  if(grepl("AM|PM", time, ignore.case = TRUE)) {
+    return(format(parse_date_time(time, "h:M%p"), "%H:%M:%S"))
+  }
+  return(time)
+}
+
+Euoplos_Rainbow_3$eventTime <- sapply(Euoplos_Rainbow_3$eventTime, convert_time)
+
+#selecting neccesory variables
+Euoplos_Rainbow_3 <- Euoplos_Rainbow_3 %>% 
+  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventID, eventTime, samplingProtocol)
+
+#removing duplicates from the dataset
+Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>% 
+  distinct()
+
+
+
+Euoplos_Rainbow_combined$eventTime <- hms::as_hms(Euoplos_Rainbow_combined$eventTime)
+
+
+# Save data as an R object in the "data-raw" folder
+save(Euoplos_Rainbow_combined, file = "data-raw/Euoplos_Rainbow.rda")
+
+```
+
+
+
+## Initial data analysis
+
 
 <!--
 3. Perform a data quality check, and then go ahead and clean the data, saving only the wild sightings. Save the resulting data in a `data` folder as an `WILD_THING_COMMON_NAME.rda` file, so that any special variable types are clearly available. (Replace `WILD_THING_COMMON_NAME` with lower case common name of your assigned wild thing.) *Note:* Some are museum or historical records or live in an animal sanctuary or zoo, which do not truly capture their wild behaviour. Downloading the event information (`galah_select(group = "event")`) can help identify wild sightings.
@@ -66,6 +165,7 @@ save(spider, file = "data-raw/spider.rda")
 Weather data pre-processing here too.
 -->
 ## Spider data
+
 
 ```{r, eval = F}
   filter(!is.na(eventDate)) %>%
@@ -80,6 +180,34 @@ spider2 <- spider2 %>%
 
 ```{r, eval = F}
 ### Weather data
+
+glimpse(Euoplos_Rainbow_combined)
+```
+
+```{r}
+library(visdat)
+vis_dat(Euoplos_Rainbow_combined)
+```
+
+
+
+```{r}
+# Filter for wild sightings
+wild_sightings <- Euoplos_Rainbow_combined %>%
+  filter(!is.na(samplingProtocol))
+
+Euoplos_Rainbow_combined <- Euoplos_Rainbow_combined %>%
+  mutate(scientificName = "Euoplos rainbow")
+
+```
+
+```{r}
+save(data, file = "data-raw/spider.rda")
+```
+
+
+```{r}
+
 library(rnoaa)
 aus_stations <- ghcnd_stations() |>
   filter(str_starts(id, "ASN")) |>
@@ -111,13 +239,217 @@ narrogin <- aus_stations |>
 
 # Exploratory data analysis
 
+```{r}
+# latitude and longitude ranges
+min_latitude <- -43.6578
+max_latitude <- -10.0511
+min_longitude <- 113.5319
+max_longitude <- 153.6358
+
+# Subset the data to select sightings within the specified region
+selected_region_sightings <- wild_sightings %>%
+  filter(decimalLatitude >= min_latitude &
+         decimalLatitude <= max_latitude &
+         decimalLongitude >= min_longitude &
+         decimalLongitude <= max_longitude)
+```
+
+```{r warning=FALSE}
+# Count the occurrences of latitude and longitude combinations
+coord_counts <- wild_sightings %>%
+  group_by(decimalLatitude, decimalLongitude) %>%
+  summarise(count = n())
+
+# Arrange the coordinates in descending order of count
+coord_counts <- coord_counts %>%
+  arrange(desc(count))
+
+# Print the result
+print(coord_counts)
+
+```
+
+
+
+```{r}
+# Specify the coordinates of your region of interest
+region_latitude <- -30.07027	 
+region_longitude <- 153.1089
+
+# Calculate distances between your region and all weather stations
+library(geosphere)
+
+station_distances <- aus_stations %>%
+  mutate(
+    distance = distHaversine(cbind(longitude, latitude), c(region_longitude, region_latitude)),
+    distance_km = distance / 1000
+  )
+
+# Set a maximum acceptable distance to consider a weather station
+max_acceptable_distance_km <- 50  # You can adjust this value based on your needs
+
+# Select the weather station(s) within the acceptable distance
+nearest_weather_stations <- station_distances %>%
+  filter(distance_km <= max_acceptable_distance_km)
+```
+
+
+
+```{r}
+narrogin <- aus_stations |>
+  filter(id == "ASN00059040") |>
+  rowwise() |>
+  mutate(ts = list(meteo_pull_monitors(
+    monitors = id, var = c("PRCP", "TMAX", "TMIN"),
+    date_min = "1912-07-15",
+    date_max = "2021-06-19") |>
+      select(-id))) |>
+  rename(lat = latitude, long = longitude, elev = elevation) |> select(id, long, lat, elev, name, wmo_id, ts) %>%
+  unnest(ts) |>
+  mutate(tmax = tmax/10,tmin = tmin/10)
+```
+
+```{r}
+# Assuming you have a column in your dataset called "eventDate" of Date type
+wild_sightings <- wild_sightings %>%
+  mutate(sighting = 1)
+```
+
+
+```{r}
+narrogin <- narrogin %>%
+  select(date, tmax, tmin, prcp)
+```
+
+
+```{r}
+final_data <- narrogin %>%
+  left_join(wild_sightings, by = c("date" = "eventDate")) %>%
+  mutate(sighting = ifelse(is.na(sighting), 0, sighting))
+
+#Remove duplicate observations
+final_data <- final_data %>%
+  distinct()
+
+final_data <- final_data %>%
+  select(date, tmax, tmin, prcp,sighting)
+
+```
+
+```{r}
+save(final_data, file = "data/final-data.rda")
+```
+
+
+## Exploratory data analysis
+
+
 <!--
 4. Make plots of the data to check each of your expectations, and report what you learn. *Note:* This might also be a place where visual inference methods *may* be useful to determine if what is seen agrees or disputes what you expected. 
 
 Weather data exploration here too.
 -->
 
+
 # Summary 
+
+```{r}
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+```
+
+```{r}
+australia <- ne_countries(scale = "medium", returnclass = "sf", country = "Australia")
+```
+
+```{r}
+ggplot(data = australia) +
+  geom_sf(fill = "lightgray") +
+  geom_jitter(data = wild_sightings, aes(x = decimalLongitude, y = decimalLatitude), color = "red", alpha = 0.5) +
+  labs(title = "Occurrences of Euoplos in Australia") +
+  theme_minimal()
+
+```
+It is clear that Euoplos occurs both in the northern region of Australia (about 10°S latitude) and along the eastern coast, which stretches from around 20°S to just below 40°S latitude.
+
+There is a notable concentration of Euoplos occurrences in the subtropical eastern Australian region, which is located between around 23°S (near Rockhampton) and 31°S (around Coffs Harbour). These sightings occur along Australia's east coast within the specified latitude range.
+
+In conclusion, it appears from this map that your hypothesis is confirmed: there is a concentration of Euoplos occurrences in subtropical eastern Australia.
+
+```{r}
+# Compute the count of Euoplos Rainbow sightings for each year
+euoplos_sightings_trends <- Euoplos_Rainbow_combined %>%
+  mutate(year = lubridate::year(eventDate)) %>%  # Extract year from eventDate
+  group_by(year) %>%
+  summarise(sightings = n())
+
+# Create a time series plot for sightings trends
+sightings_trends_plot <- ggplot(euoplos_sightings_trends, aes(x = year, y = sightings)) +
+  geom_line(color = "red") +
+  labs(title = "Sightings Trends of Euoplos Rainbow Over Time",
+       x = "Year", y = "Sightings Count") +
+  theme_minimal()
+
+# Display the sightings trends plot
+print(sightings_trends_plot)
+```
+
+
+```{r}
+final_data <- final_data %>%
+  mutate(weather_condition = ifelse((tmax > 30 | prcp > 50), "Extreme", "Not Extreme"))
+
+# Create a bar plot to compare sightings on days with extreme vs. non-extreme weather
+sightings_by_weather <- final_data %>%
+  group_by(extreme_weather) %>%
+  summarise(avg_sighting = mean(sighting))
+
+# Create the bar plot
+weather_sightings_plot <- ggplot(sightings_by_weather, aes(x = extreme_weather, y = avg_sighting)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Average Sightings by Weather Condition",
+       x = "Weather Condition", y = "Average Sightings") +
+  theme_minimal()
+
+# Display the plot
+print(weather_sightings_plot)
+```
+
+
+```{r}
+library(lubridate)
+
+# Extract month from the eventDate and group by month to get counts
+monthly_sightings <- wild_sightings %>%
+  mutate(month = month(eventDate, label = TRUE)) %>%
+  group_by(month) %>%
+  summarise(count = sum(sighting))
+
+# Plotting the data
+ggplot(monthly_sightings, aes(x = month, y = count)) +
+  geom_line(aes(group = 1), color = "blue") + 
+  geom_point(color = "red") +
+  labs(title = "Monthly Sighting Counts", x = "Month", y = "Sighting Count") +
+  theme_minimal()
+```
+
+
+
+
+
+
+```{r random sample}
+ggplot(Euoplos_Rainbow_combined, aes(x = samplingProtocol)) +
+  geom_bar(fill = "green") +
+  labs(title = "Comparison of Sampling Protocols for Euoplos Rainbow Sightings", x = "Sampling Protocol", y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+
+## Summary 
 
 # References
 
@@ -126,6 +458,7 @@ Proper citation is not done yet for the
 Australian Faunal Directory: https://biodiversity.org.au/afd/taxa/Euoplos
 Atlas of Living Australia: https://bie.ala.org.au/species/https://biodiversity.org.au/afd/taxa/1b5cd7fc-fed7-4788-ac39-b33cafc7bbb4
 Australian Spiders in Colour: https://www.termite.com.au/spider-identification.html
+<<<<<<< HEAD
 A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.htm
 
 ::: {.callout-caution collapse="true"}
@@ -149,3 +482,6 @@ Scott Chamberlain and Daniel Hocking (2023). rnoaa: 'NOAA' Weather Data from R. 
   1.4.0. https://CRAN.R-project.org/package=rnoaa
   
 :::
+
+A Photographic Guide to Australian Spiders: http://www.findaspider.org.au/find/spiders/409.html
+
