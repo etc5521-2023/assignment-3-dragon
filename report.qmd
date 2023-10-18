@@ -473,6 +473,39 @@ joined_murwillumbah <- murwillumbah %>%
 vd_mur <- vis_dat(joined_murwillumbah)
 ```
 
+## Tourism Data
+
+```{r}
+load("data/tourism.rda")
+```
+
+## 1. Subset the Data According to the Sightings 
+
+```{r eval=FALSE}
+# Using glimpse function to check the variables of tourism data 
+glimpse(tourism)
+
+# Using unique function to identify the specific regions
+unique(tourism$Region)
+```
+
+```{r}
+# Filtering the identified regions in the data set 
+
+filtered_tourism <- tourism %>%
+  filter(Region %in% c("Brisbane Airport", "Brisbane City", "Brisbane Port - Lytton", "Maroochydore - Kuluin", "Bray Park", "Logan Central" )) 
+
+# Removed the NA values from the Trips Column
+  
+filtered_tourism <- filtered_tourism %>%
+  filter(Trips != 0)
+```
+
+- We filtered our tourism data based on the weather station data and sighting data to be more specific. This way we can ensure that we get more particular details. This was done by manually filtering the coordinates of sightings and weather data, and later identifying these particular regions in tourism data.
+
+- In the process, we focused on the *Region* column in the Tourism dataset, narrowing our analysis to only those locations where spider sightings were previously reported in our weather data analysis. The weather data had highlighted sightings in four specific regions, and by aligning our tourism data with this information, we aim to conduct a more targeted and insightful analysis in our report.
+
+
 # Exploratory data analysis
 
 ## 1. Most sightings occur in the Eastern Australia
