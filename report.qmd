@@ -51,6 +51,7 @@ These expectations provide a basis for exploring and analyzing the data on Euopl
 library(lubridate)
 library(galah)
 library(tidyverse)
+library(zoo)
 ```
 
 # Data Cleaning
@@ -81,7 +82,7 @@ Euoplos_Rainbow_assert <- galah_call() |>
 
 Euoplos_Rainbow_event <- galah_call() |>
   galah_identify("Euoplos Rainbow") |>
-  galah_select(basisOfRecord, group = "event") |>
+  galah_select(cl22, basisOfRecord, group = "event") |>
   atlas_occurrences()
 ```
 
@@ -129,7 +130,8 @@ Euoplos_Rainbow_3$eventTime <- sapply(Euoplos_Rainbow_3$eventTime, convert_time)
 
 #selecting neccesory variables
 Euoplos_Rainbow_3 <- Euoplos_Rainbow_3 %>% 
-  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventTime, basisOfRecord)
+  select(decimalLatitude, decimalLongitude, eventDate,scientificName, taxonConceptID, recordID, dataResourceName, occurrenceStatus, BASIS_OF_RECORD_INVALID, eventTime, basisOfRecord, cl22) %>%
+  rename(State = cl22)
 
 #removing duplicates from the dataset
 Euoplos_Rainbow_combined <- Euoplos_Rainbow_3 %>% 
@@ -150,6 +152,7 @@ save(final_Euoplos_Rainbow, file = "data/final_Euoplos_Rainbow.rda")
 ```{r}
 load("data-raw/Euoplos_Rainbow.rda")
 load("data/final_Euoplos_Rainbow.rda")
+load("data/tourism.rda")
 ```
 
 # Data Description
@@ -473,37 +476,44 @@ joined_murwillumbah <- murwillumbah %>%
 vd_mur <- vis_dat(joined_murwillumbah)
 ```
 
-## Tourism Data
+
+## 1. Joining the sightings with tourism data
 
 ```{r}
-load("data/tourism.rda")
+library(sf)
+library(here)
+aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp"))
+
+tourism_filtered <- left_join(tourism, aus_map, by = c("Region" = "SA2_NAME21")) %>%
+  rename(State = Region)
 ```
 
-## 1. Subset the Data According to the Sightings 
 
-```{r eval=FALSE}
-# Using glimpse function to check the variables of tourism data 
-glimpse(tourism)
 
-# Using unique function to identify the specific regions
-unique(tourism$Region)
-```
 
 ```{r}
-# Filtering the identified regions in the data set 
 
-filtered_tourism <- tourism %>%
-  filter(Region %in% c("Brisbane Airport", "Brisbane City", "Brisbane Port - Lytton", "Maroochydore - Kuluin", "Bray Park", "Logan Central" )) 
+#mutate the data 
+merged_final <- final_Euoplos_Rainbow %>%
+  mutate(
+    Quarter = as.yearqtr(eventDate)
+  ) 
+merged_final$Quarter <- yearquarter(merged_final$Quarter)
 
-# Removed the NA values from the Trips Column
+#joining the data to sightings dataset
+merged_data <- left_join(merged_final, tourism_filtered, by = c("Quarter", "State"))
   
-filtered_tourism <- filtered_tourism %>%
-  filter(Trips != 0)
 ```
 
-- We filtered our tourism data based on the weather station data and sighting data to be more specific. This way we can ensure that we get more particular details. This was done by manually filtering the coordinates of sightings and weather data, and later identifying these particular regions in tourism data.
+```{r}
+#checking the data validity
+ggplot(merged_data, aes(x = State)) +
+  geom_bar(stat = "count") +
+  labs(title = "Count of States") +
+  theme_minimal()
+```
 
-- In the process, we focused on the *Region* column in the Tourism dataset, narrowing our analysis to only those locations where spider sightings were previously reported in our weather data analysis. The weather data had highlighted sightings in four specific regions, and by aligning our tourism data with this information, we aim to conduct a more targeted and insightful analysis in our report.
+
 
 
 # Exploratory data analysis

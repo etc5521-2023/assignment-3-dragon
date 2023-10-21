@@ -36,5 +36,5 @@ qtr_data <- long_data %>%
 # convert to tsibble
 tourism <- qtr_data %>%
   as_tsibble(key = c(Region, Purpose), index = Quarter)
-saveRDS(tourism, "data/tourism.rds")
+save(tourism, file = "tourism.rda")
 
