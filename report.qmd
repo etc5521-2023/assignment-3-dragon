@@ -52,6 +52,10 @@ library(lubridate)
 library(galah)
 library(tidyverse)
 library(zoo)
+library(sf)
+library(readr)
+library(here)
+library(tsibble)
 ```
 
 # Data Cleaning
@@ -152,7 +156,6 @@ save(final_Euoplos_Rainbow, file = "data/final_Euoplos_Rainbow.rda")
 ```{r}
 load("data-raw/Euoplos_Rainbow.rda")
 load("data/final_Euoplos_Rainbow.rda")
-load("data/tourism.rda")
 ```
 
 # Data Description
@@ -480,40 +483,72 @@ vd_mur <- vis_dat(joined_murwillumbah)
 ## 1. Joining the sightings with tourism data
 
 ```{r}
-library(sf)
-library(here)
-aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp"))
+# Data downloaded from Monash A-Z Databases
+# "Tourism Research Australia online for students"
+# Row: Quarter/SA2
+# Column: Stopover reason was Holiday, Visiting friends and relatives, Business, Other reason
+# Sum Overnight trips ('000)
+# Australia: Domestic Overnight Trips ('000) ----
+domestic_trips <- read_csv(
+  "data/domestic_trips_2023-10-08.csv",
+  skip = 9,
+  col_names = c("Quarter", "Region", "Holiday", "Visiting", "Business", "Other", "Total"),
+  n_max = 248056
+) %>% select(-X8)
 
-tourism_filtered <- left_join(tourism, aus_map, by = c("Region" = "SA2_NAME21")) %>%
-  rename(State = Region)
+# fill NA in "Quarter" using the last obs
+fill_na <- domestic_trips %>%
+  fill(Quarter, .direction = "down") %>%
+  filter(Quarter != "Total")
+
+# gather Stopover purpose of visit
+long_data <- fill_na %>%
+  pivot_longer(cols=Holiday:Total,
+               names_to="Purpose",
+               values_to="Trips")
+
+# manipulate Quarter
+qtr_data <- long_data %>%
+  mutate(
+    Quarter = paste(gsub(" quarter", "", Quarter), "01"),
+    Quarter = yearquarter(myd(Quarter))
+  )
+
+# convert to tsibble
+tourism <- qtr_data %>%
+  as_tsibble(key = c(Region, Purpose), index = Quarter)
 ```
 
-
-
-
 ```{r}
+#reading the SA2 regions
+aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>% 
+  select("SA2_NAME21", "STE_NAME21", "geometry") %>%
+  rename(Region = SA2_NAME21,
+         State = STE_NAME21)
 
-#mutate the data 
-merged_final <- final_Euoplos_Rainbow %>%
+#joining SA2 regions with tourism data set
+tourism_filtered <- left_join(tourism, aus_map, by = c("Region"))
+
+#adding a new variable quarter
+quarter_merged <- final_Euoplos_Rainbow %>%
   mutate(
-    Quarter = as.yearqtr(eventDate)
-  ) 
-merged_final$Quarter <- yearquarter(merged_final$Quarter)
+    Quarter = yearquarter(eventDate)
+  ) %>%
+  select("decimalLatitude", "decimalLongitude", "eventDate", "occurrenceStatus", "eventTime", "State", "Quarter")
 
-#joining the data to sightings dataset
-merged_data <- left_join(merged_final, tourism_filtered, by = c("Quarter", "State"))
-  
+# Joining the data to the sightings dataset
+wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "State")) %>%
+  select("Quarter", "Region", "State", "geometry", "decimalLatitude", "decimalLongitude",
+         "eventDate", "eventTime", "Purpose", "Trips" , "occurrenceStatus")
 ```
 
 ```{r}
 #checking the data validity
-ggplot(merged_data, aes(x = State)) +
+ggplot(wrangled_data, aes(x = State)) +
   geom_bar(stat = "count") +
   labs(title = "Count of States") +
   theme_minimal()
 ```
-
-
 
 
 # Exploratory data analysis
