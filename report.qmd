@@ -56,6 +56,7 @@ library(sf)
 library(readr)
 library(here)
 library(tsibble)
+library(gridExtra)
 ```
 
 # Data Cleaning
@@ -540,6 +541,11 @@ quarter_merged <- final_Euoplos_Rainbow %>%
 wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "State")) %>%
   select("Quarter", "Region", "State", "geometry", "decimalLatitude", "decimalLongitude",
          "eventDate", "eventTime", "Purpose", "Trips" , "occurrenceStatus")
+
+
+wrangled_data <- wrangled_data %>%
+  filter(Trips != 0.00)
+
 ```
 
 ```{r}
@@ -549,8 +555,6 @@ ggplot(wrangled_data, aes(x = State)) +
   labs(title = "Count of States") +
   theme_minimal()
 ```
-
-
 # Exploratory data analysis
 
 ## 1. Most sightings occur in the Eastern Australia
@@ -740,6 +744,44 @@ As illustrated in the @fig-overtime plot, we observe a relatively low number of 
 ::: {.callout-note}
 This can be readily confirmed by examining the dataset for Euoplos Rainbow, which contains a total of `r nrow(final_Euoplos_Rainbow)` rows. It's important to note that these observations represent wild sightings, excluding any data from museums, historical records, or animals living in sanctuaries or zoos. When comparing this figure to the overall number of sightings in the initial dataset of `r nrow(Euoplos_Rainbow)` which encompasses both wild and non-wild observations, it becomes evident that the dataset is indeed limited in scope.
 :::
+
+
+# Temporal Data Analysis 
+
+```{r}
+
+selected_state <- "Queensland"
+
+filtered_data <- wrangled_data %>%
+  filter(State == selected_state)
+
+selected_regions <- c("Brisbane City", "Brisbane Airport", "Logan Village")
+filtered_data <- filtered_data %>% 
+  filter(Region %in% selected_regions)
+
+filtered_data <- filtered_data %>%
+  mutate(Month = month(eventDate))
+
+# Create a bar plot to show the count of each purpose within the selected region
+ggplot(filtered_data, aes(x = eventDate, y = Trips, color = Purpose)) +
+  geom_line() +
+  labs(x = "Event Year", y = "Number of Trips") +
+  ggtitle("Number of Trips by Purpose") +
+  scale_color_brewer(palette = "Set1") +
+  facet_grid(. ~ Region)
+  
+
+```
+The line chart provides a comprehensive view of the number of trips by event year, facilitating our temporal analysis. Queensland was selected as the focal state due to the majority of spider sightings in that area. We further narrowed our focus to specific regions, including Brisbane City, Brisbane Airport, and Logan Village, where spider sightings were prevalent. The "Purpose" variable is used to categorize and distinguish the various reasons for these trips.
+
+Intriguingly, the data for Brisbane Airport reveals a consistent trend of almost zero trips recorded between 2016 and 2022. This unusual observation may raise questions about the accessibility or specific activities in this area.
+
+In contrast, Brisbane City appears to be the preferred destination for the majority of trips, encompassing a wide range of purposes. It's worth noting a significant drop in the number of trips at the beginning of 2020, potentially attributed to the global impact of the COVID-19 pandemic. However, as restrictions eased, spider sightings surged throughout the year.
+
+Between 2016 and 2022, the primary purpose for travel, after the "Total" category, was "Business." This indicates a strong link between business activities and trips during this period. Following closely were "Visiting" and "Holiday," while the "Others" category had the fewest recorded trips.
+
+Conversely, Logan Village exhibited a slightly higher number of trips compared to Brisbane Airport across all years. Further exploration and contextual information could shed light on the specific factors influencing travel patterns in these regions.
+
 
 # Summary 
 
