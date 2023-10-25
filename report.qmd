@@ -540,14 +540,14 @@ quarter_merged <- final_Euoplos_Rainbow %>%
 # Joining the data to the sightings dataset
 wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "State")) %>%
   select("Quarter", "Region", "State", "geometry", "decimalLatitude", "decimalLongitude",
-         "eventDate", "eventTime", "Purpose", "Trips" , "occurrenceStatus")
-
-
-wrangled_data <- wrangled_data %>%
-  filter(Trips != 0.00)
+         "eventDate", "eventTime", "Purpose", "Trips" , "occurrenceStatus") %>%
+  filter(Trips != 0.00) 
 
 region_subset <- wrangled_data %>%
-  filter(State %in% c("New South Wales", "Queensland"))
+  filter(State %in% c("New South Wales", "Queensland")) %>%
+  filter(Purpose == "Holiday") %>%
+  mutate(Trips = round(Trips*1000)) %>%
+  mutate(occurrenceStatus = ifelse(occurrenceStatus == "PRESENT", 1, occurrenceStatus))
 
 ```
 
