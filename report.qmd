@@ -546,11 +546,14 @@ wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "
 wrangled_data <- wrangled_data %>%
   filter(Trips != 0.00)
 
+region_subset <- wrangled_data %>%
+  filter(State %in% c("New South Wales", "Queensland"))
+
 ```
 
 ```{r}
 #checking the data validity
-ggplot(wrangled_data, aes(x = State)) +
+ggplot(region_subset, aes(x = State)) +
   geom_bar(stat = "count") +
   labs(title = "Count of States") +
   theme_minimal()
@@ -768,7 +771,7 @@ ggplot(filtered_data, aes(x = eventDate, y = Trips, color = Purpose)) +
   labs(x = "Event Year", y = "Number of Trips") +
   ggtitle("Number of Trips by Purpose") +
   scale_color_brewer(palette = "Set1") +
-  facet_grid(. ~ Region)
+  facet_wrap(. ~ Region, scale = "free_y")
   
 
 ```
