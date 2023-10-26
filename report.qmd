@@ -549,7 +549,14 @@ region_subset <- wrangled_data %>%
   mutate(Trips = round(Trips*1000)) %>%
   mutate(occurrenceStatus = ifelse(occurrenceStatus == "PRESENT", 1, occurrenceStatus))
 
+region_temporal <- region_subset %>%
+  mutate(Year = year(Quarter)) %>%
+  group_by(Year, Quarter, State, Purpose) %>%
+  summarize(Trips = sum(Trips))
+
+
 ```
+
 
 ```{r}
 #checking the data validity
@@ -558,6 +565,51 @@ ggplot(region_subset, aes(x = State)) +
   labs(title = "Count of States") +
   theme_minimal()
 ```
+```{r}
+plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
+  geom_line() +
+  labs(title = "Time Series Plot of Trips",
+       x = "Quarter",
+       y = "Trips") +
+  theme_minimal()
+
+plot1
+
+plot2 <- ggplot(region_temporal, aes(
+  x = Quarter,
+  y = Trips,
+  group = State
+)) +
+  geom_line(aes(color = State))
+plot2
+```
+
+The plot labeled as "plot2" is a line plot that provides insights into the number of trips. It visualizes the number of trips on the y-axis while displaying quarters on the x-axis. The time frame covered in the plot ranges from 2016 to 2022, with only the first quarter (Q1) clearly displayed.
+
+The plot highlights the contrasting tourism trends between two Australian states: New South Wales and Queensland. Here's a more detailed analysis:
+
+1.) Queensland: Tourism in Queensland has been consistently observed since 2016, with a gradual increase in the number of trips. Notable patterns in the data are observed:
+
+  After mid-2020 (around Q2 2020), there was a significant surge in tourism to Queensland, resulting in a peak.
+
+  Following this peak, there was a substantial decline in tourism in 2022, with the number of trips plummeting.
+
+  However, from mid-2022 onward, there appears to be a resurgence in tourism, although it hasn't fully recovered to   previous levels.
+
+2.) New South Wales: In contrast to Queensland, tourism in New South Wales only became evident after 2020 Q1. Key observations include:
+
+  A remarkable and rapid increase in tourism was noted, peaking around 2022 Q1.
+ 
+  After this peak, there was a downturn in the number of trips.
+
+
+These findings suggest that Queensland has been a consistent tourist destination since 2016, with fluctuations, including a significant drop in 2022. New South Wales saw a surge in tourism after 2020 Q1, reaching its zenith around 2022 Q1, followed by a decline.
+
+
+The reasons behind these trends in tourism may include various factors such as seasonal variations, regional events, economic factors, or shifts in travel preferences. Further analysis and domain-specific knowledge may be necessary to better understand these patterns.
+
+
+
 # Exploratory data analysis
 
 ## 1. Most sightings occur in the Eastern Australia
@@ -784,6 +836,28 @@ In contrast, Brisbane City appears to be the preferred destination for the major
 Between 2016 and 2022, the primary purpose for travel, after the "Total" category, was "Business." This indicates a strong link between business activities and trips during this period. Following closely were "Visiting" and "Holiday," while the "Others" category had the fewest recorded trips.
 
 Conversely, Logan Village exhibited a slightly higher number of trips compared to Brisbane Airport across all years. Further exploration and contextual information could shed light on the specific factors influencing travel patterns in these regions.
+
+
+
+```{r}
+region_subset <- region_subset %>%
+  mutate(Year = year(eventDate)) %>%
+  group_by(Year) %>% 
+  mutate(wild_sighting= sum(occurrenceStatus),
+        tourist_trips = sum(Trips))
+
+# Create a line plot with log-scaled y-axis
+ggplot(region_subset, aes(x = Year)) +
+  geom_line(aes(y = tourist_trips, color = "Tourist Trips"), linetype = "solid") +
+  geom_line(aes(y = wild_sighting, color = "Wild Sightings"), linetype = "solid") +
+  labs(x = "Year", y = "Count") +
+  ggtitle("Ecotourist Interest in Wild Thing by Year") +
+  scale_color_manual(values = c("Tourist Trips" = "blue", "Wild Sightings" = "red")) +
+  theme_minimal() +
+  scale_x_continuous(breaks = unique(region_subset$Year))
+```
+
+
 
 
 # Summary 
