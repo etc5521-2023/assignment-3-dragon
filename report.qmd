@@ -549,14 +549,30 @@ region_subset <- wrangled_data %>%
   mutate(Trips = round(Trips*1000)) %>%
   mutate(occurrenceStatus = ifelse(occurrenceStatus == "PRESENT", 1, occurrenceStatus))
 
+region_temporal <- region_subset %>%
+  mutate(Year = year(Quarter)) %>%
+  group_by(Year, Quarter, State, Purpose) %>%
+  summarize(Trips = sum(Trips))
+
 ```
 
 ```{r}
-#checking the data validity
-ggplot(region_subset, aes(x = State)) +
-  geom_bar(stat = "count") +
-  labs(title = "Count of States") +
+plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
+  geom_line() +
+  labs(title = "Time Series Plot of Trips",
+       x = "Quarter",
+       y = "Trips") +
   theme_minimal()
+
+plot1
+
+plot2 <- ggplot(region_temporal, aes(
+  x = Quarter,
+  y = Trips,
+  group = State
+)) +
+  geom_line(aes(color = State))
+plot2
 ```
 # Exploratory data analysis
 
@@ -753,7 +769,7 @@ This can be readily confirmed by examining the dataset for Euoplos Rainbow, whic
 
 ```{r}
 
-selected_state <- "Queensland"
+selected_state <- c("Queensland", "New South Wales")
 
 filtered_data <- wrangled_data %>%
   filter(State == selected_state)
@@ -771,7 +787,7 @@ ggplot(filtered_data, aes(x = eventDate, y = Trips, color = Purpose)) +
   labs(x = "Event Year", y = "Number of Trips") +
   ggtitle("Number of Trips by Purpose") +
   scale_color_brewer(palette = "Set1") +
-  facet_wrap(. ~ Region, scale = "free_y")
+  facet_wrap(. ~ State, scale = "free_y")
   
 
 ```
