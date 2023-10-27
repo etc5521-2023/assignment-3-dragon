@@ -1,6 +1,6 @@
 ---
 title: "Euoplos Rainbow - Golden Trapdoor Spider"
-author: "Team - Dragon, Members - Jay and Justin"
+author: "Team - Dragon, Members - Jay, Justin, Bilal, Hardik & Parnika"
 format: 
   html:
     code-fold: true
@@ -862,7 +862,7 @@ ggplot(region_subset, aes(x = Year)) +
   theme_minimal() +
   scale_x_continuous(breaks = unique(region_subset$Year))
 ```
-# Regression Model 
+# EcoTourism Analysis
 
 ```{r}
 # Adding custom theme for all the plots
@@ -881,11 +881,8 @@ custom_theme <- function() {
 }
 ```
 
-The above is a "custom Function" created to apply in rest of all the plot to ease on the task and make plots more appealing. 
-
-
 ```{r}
-#wrangling the tourism datasets for the further analysis
+#| label: Tourism Data Wrangle
 australia_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>%
   select("SA2_NAME21", "STE_NAME21") %>%
   rename(
@@ -902,13 +899,9 @@ tourist_filtered <- left_join(tourism, aus_map, by = c("Region")) %>%
   filter(Year >= 2015) 
 ```
 
-
-
 ```{r}
-# Creating a Scatter Plot for Data Visualization
 #| label: fig-tourism
-#| fig-cap: "The trend in Tourism Over Quarter"
-
+#| fig-cap: "Tourism Patterns Across Recent Quarters"
 p1 <- tourist_filtered %>%
   group_by(Year) %>%
   summarize(TotalTrips = sum(Trips), Size = max(TotalTrips)) %>%
@@ -923,50 +916,142 @@ p1_plotly <- ggplotly(p1)
 p1_plotly 
 ```
 
-@fig-tourism shows the trend of tourism over quarters. 
-
+@fig-tourism shows the domestic trend of trips in the states of New South Wales and Queensland in the recent quarters.
 
 :::{.callout-note}
-# Key takeaway
-
-The plot above illustrates the quarterly patterns of tourism over multiple years. A noteworthy observation from the plot is that, throughout the displayed years, the number of trips consistently exceeded a threshold of 50,00,000. Remarkably, this trend remained resilient even during the challenging times of the COVID-19 pandemic, as there is no significant decline in the number of trips.
-
+The plot illustrates the quarterly pattern of tourism over recent quarters from 2016 to 2022. In fact, the tourism is showing a consistent increasing trend throughout. Interestingly, the trips always exceeded threshold of 5M. However, there was a slight drop in the number of trips in the first quarter of 2020 when COVID-19 was at its peak but this pandemic could not stop people from enjoying their life. Q3 2020 soon saw a rise in the domestic trips despite lockdown.
 :::
 
-
-
+```{r}
+#| label: Sightings Data Wrangle
+quarter_merged <- final_Euoplos_Rainbow %>%
+  mutate(
+    Quarter = yearquarter(eventDate),
+    occurrenceStatus = 1,
+    Year = year(eventDate) 
+  ) %>%
+  filter(Year <= 2022)
+```
 
 ```{r}
-# Creating a Scatter Plot for Data Visualization
 #| label: fig-sighting
-#| fig-cap: "The trend in Sightings across Quarters"
-p2 <- merged_quarter %>%
+#| fig-cap: "Sightings Patterns Across Recent Quarters"
+p2 <- quarter_merged %>%
   group_by(Year, Quarter) %>%
   summarize(Total_occurrenceStatus = sum(occurrenceStatus), Size = max(Total_occurrenceStatus)) %>%
   ggplot(aes(x = Quarter, y = Total_occurrenceStatus, size = Size)) +
   geom_point(color = "red") +
   labs(
     title = "Sightings Patterns Across Recent Quarters",
-    x = "Quarters",  # Change x-axis label to "Quarters"
+    x = "Quarters", 
     y = "Sightings"
   ) + custom_theme()
 
 p2_plotly <- ggplotly(p2)
 p2_plotly
 ```
-@fig-sighting demonstrates the trend of sightings across quarters 
-
+@fig-sighting shows the rare sightings of Golden Trapdoor Spider across the recent quarters.
 
 :::{.callout-note}
-# Key takeaway
-
-This scatter plot depicts the relationship between wildlife sightings and quarters. Unfortunately, the data does not reveal any prominent patterns. The primary observation is that for the majority of the years, there were no sightings, except during the years of the COVID-19 pandemic, which occurred from 2020 to 2022.
-
+This scatter plot depicts the relationship between Golden Trapdoor Spider sightings across different quarters. It seems that these spiders are not a big fan of human beings. In fact, their sightings remained all low till 2020 until COVID-19 which in turn caused a burst in their sightings.
 :::
 
+```{r}
+#| label: fig-ecotourismtable
+#| fig-cap: "ecotourism Table"
+sightings_table <- quarter_merged %>%
+  group_by(Year) %>%
+  select(Quarter, occurrenceStatus)  %>%
+  mutate(sightings = sum(occurrenceStatus)) %>%
+  ungroup()
+
+tourism_table <- tourist_filtered %>%
+group_by(Year) %>%
+select(Quarter, Trips)  %>%
+mutate(travel = sum(Trips)) %>%
+  ungroup()
+
+eco_tourism_data <- inner_join(sightings_table, tourism_table, by = c("Quarter")) %>%
+  select("Quarter", "sightings", "travel") 
+```
+
+```{r}
+#| label: fig-regressionplot
+#| fig-cap: "Regression Plot"
+regression <- eco_tourism_data %>%
+ggplot(aes(x = log(travel), y = sightings)) + 
+  geom_point(color = "red") + 
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, colour = "darkblue") +
+  labs(
+    title = "Association between Sightings and Tourism",
+    x = "Tourism", 
+    y = "Sightings"
+  ) + custom_theme()
+
+final_reg <- ggplotly(regression)
+final_reg 
+```
 
 
+@fig-regressionplot uses the simple regression method to show the association between Sightings and Trips. For this analysis, we considered `Sightings` as a `Response Variable` and `Tourism` as an `Explanatory Variable` meaning we are using Tourism data to predict the values of spider sightings. It is evident from the above graph that there is no association between two variables. I don't think that Sightings and Tourism share any casual relationship. 
 
+Lets drill further using Hypothesis Test to check the validity of our assumption.
+
+```{r}
+eco_tourism_data_lm <- eco_tourism_data %>%
+lm(formula = travel ~ sightings)
+coefs <- tidy(eco_tourism_data_lm) 
+kable(coefs) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+```{r}
+# Finding approximate p-value
+coefs$p.value
+```
+
+- H0 : There exists a linear association between Tourism and Spider Sightings.
+- α : 0.05 (Industry Standard)
+- p-value : 0.000000e+00, 4.440349e-71 (Calculated)
+
+:::{.callout-note}
+Our Hypothesis analysis provides strong evidence that there is no association between the Golden Trapdoor Spider and tourism. The extremely small p-values, though not exactly zero, strongly suggest that the observed results are highly unlikely to have occurred by random chance. Consequently, we can confidently reject the null hypothesis implying the lack of any significant relationship between the presence of the Golden Trapdoor Spider and tourism. 
+
+Further, our p-value < α, thus, we have appropriate evidence to reject the null hypothesis.
+:::
+
+```{r}
+cor(eco_tourism_data$travel, eco_tourism_data$sightings)
+```
+
+We can also find the correlation between sightings and travel using cor function in it which shows the correlation a very weak negative correlation of -0.1 between two variables. This means that the two variables have a very slight tendency to move in opposite directions, but the relationship is not strong or significant.
+
+```{r}
+#| label: fig-residplot
+#| fig-cap: "Residue Plot"
+eco_tourism_data <- eco_tourism_data %>%
+  mutate(resids = eco_tourism_data_lm$residuals)
+
+p7 <- eco_tourism_data %>%
+  ggplot(aes(x = log(travel), y = log(resids))) +  
+  geom_point(colour = "hotpink") +
+  geom_hline(yintercept = 0, color = "darkblue")  +
+  labs(
+    title = "Residuals Plot",
+    x = "Tourism", 
+    y = "Residuals"
+  ) + custom_theme()
+
+final_p7 <- ggplotly(p7)
+final_p7 
+```
+
+@fig-residplot shows that there is weak relationship between travel and tourism.
+
+:::{.callout-note}
+#Key Takeaways
+After all our checks, we can confidently say that there exists no relationship between tourism and travel.
+:::
 
 # Summary 
 
