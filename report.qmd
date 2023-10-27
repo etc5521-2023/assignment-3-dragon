@@ -48,6 +48,8 @@ These expectations provide a basis for exploring and analyzing the data on Euopl
 
 
 ```{r}
+library(ggplot2)
+library(patchwork)
 library(lubridate)
 library(galah)
 library(tidyverse)
@@ -57,6 +59,11 @@ library(readr)
 library(here)
 library(tsibble)
 library(gridExtra)
+library(sf)
+library(plotly)
+library(dplyr)
+library(broom)
+library(kableExtra)
 ```
 
 # Data Cleaning
@@ -602,7 +609,6 @@ The plot highlights the contrasting tourism trends between two Australian states
  
   After this peak, there was a downturn in the number of trips.
 
-
 These findings suggest that Queensland has been a consistent tourist destination since 2016, with fluctuations, including a significant drop in 2022. New South Wales saw a surge in tourism after 2020 Q1, reaching its zenith around 2022 Q1, followed by a decline.
 
 
@@ -856,6 +862,108 @@ ggplot(region_subset, aes(x = Year)) +
   theme_minimal() +
   scale_x_continuous(breaks = unique(region_subset$Year))
 ```
+# Regression Model 
+
+```{r}
+# Adding custom theme for all the plots
+custom_theme <- function() {
+  theme(
+    plot.title = element_text(size = 16, hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major = element_line(color = "lightgray"),
+    panel.grid.minor = element_blank()
+  )
+}
+```
+
+The above is a "custom Function" created to apply in rest of all the plot to ease on the task and make plots more appealing. 
+
+
+```{r}
+#wrangling the tourism datasets for the further analysis
+australia_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>%
+  select("SA2_NAME21", "STE_NAME21") %>%
+  rename(
+    Region = SA2_NAME21,
+    State = STE_NAME21
+  )
+
+tourist_filtered <- left_join(tourism, aus_map, by = c("Region")) %>%
+  filter(State %in% c("New South Wales", "Queensland")) %>%
+  filter(Purpose == "Holiday") %>%
+  filter(Trips != 0.00) %>%
+  mutate(Trips = round(Trips * 1000)) %>%
+  mutate(Year = year(Quarter)) %>%
+  filter(Year >= 2015) 
+```
+
+
+
+```{r}
+# Creating a Scatter Plot for Data Visualization
+#| label: fig-tourism
+#| fig-cap: "The trend in Tourism Over Quarter"
+
+p1 <- tourist_filtered %>%
+  group_by(Year) %>%
+  summarize(TotalTrips = sum(Trips), Size = max(TotalTrips)) %>%
+  ggplot(aes(x = Quarter, y = TotalTrips, size = Size)) +
+  geom_point(color = "blue") +
+  labs(
+    title = "Tourism Patterns Across Recent Quarters",
+    x = "Quarters",
+    y = "Total Trips"
+  ) + custom_theme() 
+p1_plotly <- ggplotly(p1)
+p1_plotly 
+```
+
+@fig-tourism shows the trend of tourism over quarters. 
+
+
+:::{.callout-note}
+# Key takeaway
+
+The plot above illustrates the quarterly patterns of tourism over multiple years. A noteworthy observation from the plot is that, throughout the displayed years, the number of trips consistently exceeded a threshold of 50,00,000. Remarkably, this trend remained resilient even during the challenging times of the COVID-19 pandemic, as there is no significant decline in the number of trips.
+
+:::
+
+
+
+
+```{r}
+# Creating a Scatter Plot for Data Visualization
+#| label: fig-sighting
+#| fig-cap: "The trend in Sightings across Quarters"
+p2 <- merged_quarter %>%
+  group_by(Year, Quarter) %>%
+  summarize(Total_occurrenceStatus = sum(occurrenceStatus), Size = max(Total_occurrenceStatus)) %>%
+  ggplot(aes(x = Quarter, y = Total_occurrenceStatus, size = Size)) +
+  geom_point(color = "red") +
+  labs(
+    title = "Sightings Patterns Across Recent Quarters",
+    x = "Quarters",  # Change x-axis label to "Quarters"
+    y = "Sightings"
+  ) + custom_theme()
+
+p2_plotly <- ggplotly(p2)
+p2_plotly
+```
+@fig-sighting demonstrates the trend of sightings across quarters 
+
+
+:::{.callout-note}
+# Key takeaway
+
+This scatter plot depicts the relationship between wildlife sightings and quarters. Unfortunately, the data does not reveal any prominent patterns. The primary observation is that for the majority of the years, there were no sightings, except during the years of the COVID-19 pandemic, which occurred from 2020 to 2022.
+
+:::
+
 
 
 
