@@ -531,47 +531,44 @@ region_temporal <- region_subset %>%
 ```
 
 ```{r}
-plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
+plot1 <- ggplotly(
+  ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
   geom_line() +
   labs(title = "Time Series Plot of Trips",
        x = "Quarter",
        y = "Trips") +
-  theme_minimal()
+  theme_classic()
+)
+
+plot1 <- ggplotly(plot1)
 
 plot1
 
-plot2 <- ggplot(region_temporal, aes(
-  x = Quarter,
-  y = Trips,
-  group = State
-)) +
-  geom_line(aes(color = State))
+plot2 <- ggplot(region_temporal, aes(x = Quarter, y = Trips, group = Year, color = Year)) +
+  geom_line() +
+  labs(title = "Time Series Plot of Trips by Quarter",
+       x = "Quarter",
+       y = "Trips") +
+  theme_minimal() +
+  facet_wrap(~ Year, scales = "free_y")
+
+# Convert ggplot object to a plotly object
+plot2 <- ggplotly(plot2)
+
+# Display the interactive plot
 plot2
+
 ```
 
-The plot labeled as "plot2" is a line plot that provides insights into the number of trips. It visualizes the number of trips on the y-axis while displaying quarters on the x-axis. The time frame covered in the plot ranges from 2016 to 2022, with only the first quarter (Q1) clearly displayed.
+The plots above provides insights into the number of trips; yearly and quarterly. Here's a more detailed analysis:
 
-The plot highlights the contrasting tourism trends between two Australian states: New South Wales and Queensland. Here's a more detailed analysis:
+1.) **Yearly**: Tourism in Maroochydore has been consistently observed since 2016, with an increasing trend in the number of trips since 2020. Notable patterns in the data are observed:
 
-1.) Queensland: Tourism in Queensland has been consistently observed since 2016, with a gradual increase in the number of trips. Notable patterns in the data are observed:
+  After the second quarter of 2020, there was a significant surge in tourism resulting in several peaks and an increasing trend. The series of crests and troughs signal the element of seasonality present with most peaks observed the **second** and **third** quarter of each year while the **first** and **fourth** quarters observed series of troughs.
 
-  After mid-2020 (around Q2 2020), there was a significant surge in tourism to Queensland, resulting in a peak.
-
-  Following this peak, there was a substantial decline in tourism in 2022, with the number of trips plummeting.
-
-  However, from mid-2022 onward, there appears to be a resurgence in tourism, although it hasn't fully recovered to   previous levels.
-
-2.) New South Wales: In contrast to Queensland, tourism in New South Wales only became evident after 2020 Q1. Key observations include:
-
-  A remarkable and rapid increase in tourism was noted, peaking around 2022 Q1.
- 
-  After this peak, there was a downturn in the number of trips.
-
-These findings suggest that Queensland has been a consistent tourist destination since 2016, with fluctuations, including a significant drop in 2022. New South Wales saw a surge in tourism after 2020 Q1, reaching its zenith around 2022 Q1, followed by a decline.
-
+2.) **Quarterly**: A detailed look in the quarterly plot shows absence of data for multiple quarters in their respective years. However, it still confirms most peaks are observed in the **second** and **third** quarters of the years. The absence of more information for Maroochydore is a data limitation.
 
 The reasons behind these trends in tourism may include various factors such as seasonal variations, regional events, economic factors, or shifts in travel preferences. Further analysis and domain-specific knowledge may be necessary to better understand these patterns.
-
 
 ## Most sightings occur in the Eastern Australia
 
