@@ -221,20 +221,6 @@ For the analysis in R, libraries such as tidyverse, galah, and lubridate were em
 Before proceeding with any advanced analysis, potential users of this dataset should always check for missing values, outliers, or other anomalies that might affect the results. Given the geospatial nature of the data, considerations for spatial analyses or visualizations could also be relevant.
 :::
 
-# Initial data analysis
-
-## Euoplos Rainbow data
-
-```{r}
-library(visdat)
-vis_dat(final_Euoplos_Rainbow)
-```
-
-::: {.callout-note}
-* **Data Quality Enhancement**: The initial stage of our data processing involves the critical task of data quality enhancement. This process primarily consists of filtering out entries with missing values in key fields, including eventDate, Longitude, and Latitude. By taking this step, we are committed to ensuring that our subsequent geographical analyses are conducted with meaningful and comprehensive data.
-
-* **Emphasis on Human Observations**: In our data refinement approach, special attention is given to records where the basisOfRecord is explicitly labeled as "HUMAN_OBSERVATION." This deliberate selection criteria signify our preference for incorporating data sourced directly from human observations, which is often regarded as a more reliable data source.
-:::
 
 ## Weather data
 ```{r}
@@ -287,6 +273,72 @@ assign_to_group <- function(latitude, longitude) {
 # Assign points to groups
 final_Euoplos_Rainbow$cluster <- mapply(assign_to_group, final_Euoplos_Rainbow$decimalLatitude, final_Euoplos_Rainbow$decimalLongitude)
 ```
+
+## Most sightings occur in the Eastern Australia
+
+```{r}
+#| label: fig-fullmap
+#| fig-cap: "All sightings on Australia map"
+
+library(ozmaps)
+library(ggrepel)
+
+sf_oz <- ozmap_data("states")
+
+gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
+  geom_point(data = final_Euoplos_Rainbow,
+                      mapping = aes(x = decimalLongitude,
+                                    y = decimalLatitude
+                                   ),
+                      color = "blue", alpha = 0.5) +
+  coord_sf(ylim = c(-44.5, -10), xlim = c(110, 155)) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  labs(title = "Where is Eupolos Rainbow sighted?")
+
+gg
+```
+
+::: {.callout-note}
+As depicted in @fig-fullmap, our initial expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
+:::
+
+```{r}
+#| label: fig-station
+#| fig-cap: "Weather stations with 4 groups on map"
+
+
+stations_name <- aus_stations %>%
+  filter(name %in% c("brisbane", "maroochydore aero", "logan city water treatment", "murwillumbah (bray park)"))
+
+# Add the Australian state boundaries
+gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
+  geom_point(data = final_Euoplos_Rainbow,
+                      mapping = aes(x = decimalLongitude,
+                                    y = decimalLatitude,
+                                    color = cluster
+                                   ),
+                      alpha = 0.5) +
+  geom_point(data = stations_name, 
+             mapping = aes(x = longitude,
+                           y = latitude),
+             color = "black", alpha = 1) +
+  geom_text_repel(data = stations_name,
+           mapping = aes(x = longitude,
+                         y = latitude, 
+                          label = name),
+            size = 3, direction = "x") +
+  coord_sf(ylim = c(-44.5, -10), xlim = c(110, 155)) +
+  theme_bw() +
+  #theme(legend.position = "none") +
+  labs(title = "Where is Eupolos Rainbow sighted?")
+
+gg + coord_sf(ylim = c(-29, -26.5), xlim = c(152, 155)) 
+```
+
+::: {.callout-note}
+Initially, as shown in @fig-station, I divided the majority of Eastern Australia sightings into four distinct clusters and then matched each cluster with the nearest weather station. Any remaining sightings were categorized under the "Other" group. Consequently, for Group 1 through Group 4, the corresponding weather stations are Maroochydore Aero, Brisbane, Logan City Water Treatment, and Murwillumbah (Bray Park), respectively.
+:::
 
 
 ```{r}
@@ -410,43 +462,6 @@ combined_plot
 As illustrated in @fig-station-year above, the primary sightings took place during the following periods: Maroochydore station from 2016 to 2023, Brisbane stations from 2020 to 2023, Logan City Water Treatment station from 2020 to 2023, and Murwillumbah station from 2018 to 2023, with a noticeable gap between 2019 and 2022. Consequently, our approach will involve filtering the data for all four weather stations based on these specific year ranges and subsequently performing a left join with the Euoplos Rainbow dataset.
 :::
 
-```{r}
-maroochydore <- maroochydore %>% mutate(year = year(date)) %>% filter(year > 2016)
-brisbane <- brisbane %>% mutate(year = year(date)) %>% filter(year > 2020)
-logan_city <- logan_city %>% mutate(year = year(date)) %>% filter(year > 2020) 
-murwillumbah <- murwillumbah %>% mutate(year = year(date)) %>% filter(year > 2018)
-```
-
-```{r}
-joined_maroochydore <- maroochydore %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 1"), 
-            by = c("date" = "eventDate")) %>%
-  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
-  mutate(sighting = as.factor(sighting))
-vd_maroo <- vis_dat(joined_maroochydore)
-
-joined_brisbane <- brisbane %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 2"), 
-            by = c("date" = "eventDate")) %>%
-  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
-  mutate(sighting = as.factor(sighting))
-vd_bris <- vis_dat(joined_brisbane)
-
-joined_logan_city <- logan_city %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 3"), 
-            by = c("date" = "eventDate")) %>%
-  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
-  mutate(sighting = as.factor(sighting))
-vd_lc <- vis_dat(joined_logan_city)
-
-joined_murwillumbah <- murwillumbah %>%
-  left_join(final_Euoplos_Rainbow %>% filter(cluster == "Group 4"), 
-            by = c("date" = "eventDate")) %>%
-  mutate(sighting = ifelse(is.na(decimalLatitude), 0, 1)) %>%
-  mutate(sighting = as.factor(sighting))
-vd_mur <- vis_dat(joined_murwillumbah)
-```
-
 
 ## 1. Joining the sightings with tourism data
 
@@ -488,14 +503,21 @@ tourism <- qtr_data %>%
 ```
 
 ```{r}
-##reading the SA2 regions
+
+#reading the SA2 regions
 aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>% 
   select("SA2_NAME21", "STE_NAME21", "geometry") %>%
   rename(Region = SA2_NAME21,
          State = STE_NAME21)
 
 #joining SA2 regions with tourism data set
-tourism_filtered <- left_join(tourism, aus_map, by = c("Region"))
+tourist_filtered <- left_join(tourism, aus_map, by = c("Region")) %>%
+  filter(Region %in% "Maroochydore - Kuluin") %>%
+  filter(Purpose == "Holiday") %>%
+  filter(Trips != 0.00) %>%
+  mutate(Trips = round(Trips * 1000)) %>%
+  mutate(Year = year(Quarter)) %>%
+  filter(Year >= 2015) 
 
 #adding a new variable quarter
 quarter_merged <- final_Euoplos_Rainbow %>%
@@ -505,7 +527,7 @@ quarter_merged <- final_Euoplos_Rainbow %>%
   select("decimalLatitude", "decimalLongitude", "eventDate", "occurrenceStatus", "eventTime", "State", "Quarter")
 
 # Joining the data to the sightings dataset
-wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "State")) %>%
+wrangled_data <- left_join(quarter_merged, tourist_filtered, by = c("Quarter", "State")) %>%
   select("Quarter", "Region", "State", "geometry", "decimalLatitude", "decimalLongitude",
          "eventDate", "eventTime", "Purpose", "Trips" , "occurrenceStatus") %>%
   filter(Trips != 0.00) 
@@ -513,7 +535,6 @@ wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "
 region_subset <- wrangled_data %>%
   filter(Region %in% "Maroochydore - Kuluin") %>%
   filter(Purpose == "Holiday") %>%
-  mutate(Trips = round(Trips*1000)) %>%
   mutate(occurrenceStatus = ifelse(occurrenceStatus == "PRESENT", 1, occurrenceStatus))
 
 region_subset <- region_subset %>%
@@ -524,31 +545,38 @@ region_subset <- region_subset %>%
 
 region_temporal <- region_subset %>%
   mutate(Year = year(Quarter)) %>%
-  group_by(Year, Quarter, Region) %>%
+  mutate(Quar = quarter(Quarter)) %>%
+  group_by(Year, Quar, Region) %>%
   summarize(Trips = sum(Trips))
+
+  
 
 
 ```
 
 ```{r}
-plot1 <- ggplotly(
-  ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
-  geom_line() +
-  labs(title = "Time Series Plot of Trips",
-       x = "Quarter",
-       y = "Trips") +
-  theme_classic()
-)
+#| label: fig-tourism
+#| fig-cap: "Tourism Patterns Across Recent Years"
+
+plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
+  geom_line(color = "steelblue", size = 1.5) +
+  geom_smooth(method = "loess", color = "red", linetype = "dotted") +
+  labs(title = "Time Series of Trips to Maroochydore",
+       x = "Year",
+       y = "Trips (in thousands)") +
+  scale_y_continuous(labels = scales::number_format(scale = 1e-3)) +
+  theme_minimal()
 
 plot1 <- ggplotly(plot1)
 
 plot1
 
-plot2 <- ggplot(region_temporal, aes(x = Quarter, y = Trips, group = Year, color = Year)) +
+plot2 <- ggplot(region_temporal, aes(x = Quar, y = Trips, group = Year, color = Year)) +
   geom_line() +
-  labs(title = "Time Series Plot of Trips by Quarter",
+  labs(title = "Quarterly Plot of Trips to Maroochydore",
        x = "Quarter",
-       y = "Trips") +
+       y = "Trips (in thousands)") +
+  scale_y_continuous(labels = scales::number_format(scale = 1e-3)) +
   theme_minimal() +
   facet_wrap(~ Year, scales = "free_y")
 
@@ -560,71 +588,20 @@ plot2
 
 ```
 
+:::{.callout-note}
 The plots above provides insights into the number of trips; yearly and quarterly. Here's a more detailed analysis:
 
-1.) **Yearly**: Tourism in Maroochydore has been consistently observed since 2016, with an increasing trend in the number of trips since 2020. Notable patterns in the data are observed:
+1.) **Yearly**: Tourism in Maroochydore has been consistently observed since 2016, with an increasing trend in the number of trips since 2020 as the smooth `loess` method confirms. Notable patterns in the data are observed:
 
-  After the second quarter of 2020, there was a significant surge in tourism resulting in several peaks and an increasing trend. The series of crests and troughs signal the element of seasonality present with most peaks observed the **second** and **third** quarter of each year while the **first** and **fourth** quarters observed series of troughs.
+  After the second quarter of 2020, there was a significant surge in tourism resulting in several peaks and an increasing trend. The series of crests and troughs signal the element of seasonality present with most peaks observed the **second** and **third** quarter of each year while the **first** and **fourth** quarters observed series of troughs. Moreover, the shape of the plot depicts presence of seasonality in tourism for Maroochydore.
 
 2.) **Quarterly**: A detailed look in the quarterly plot shows absence of data for multiple quarters in their respective years. However, it still confirms most peaks are observed in the **second** and **third** quarters of the years. The absence of more information for Maroochydore is a data limitation.
 
+The plot illustrates the quarterly pattern of tourism over recent quarters from 2016 to 2022. In fact, the tourism is showing a consistent increasing trend throughout. Interestingly, the trips always exceeded threshold of 5M. However, there was a slight drop in the number of trips in the first quarter of 2020 when COVID-19 was at its peak but this pandemic could not stop people from enjoying their life. Q3 2020 soon saw a rise in the domestic trips despite lockdown.
+
 The reasons behind these trends in tourism may include various factors such as seasonal variations, regional events, economic factors, or shifts in travel preferences. Further analysis and domain-specific knowledge may be necessary to better understand these patterns.
-
-## Most sightings occur in the Eastern Australia
-
-```{r}
-#| label: fig-fullmap
-#| fig-cap: "All sightings on Australia map"
-gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
-  geom_point(data = final_Euoplos_Rainbow,
-                      mapping = aes(x = decimalLongitude,
-                                    y = decimalLatitude
-                                   ),
-                      color = "blue", alpha = 0.5) +
-  coord_sf(ylim = c(-44.5, -10), xlim = c(110, 155)) +
-  theme_bw() +
-  #theme(legend.position = "none") +
-  labs(title = "Where is Eupolos Rainbow sighted?")
-
-gg
-```
-
-::: {.callout-note}
-As depicted in @fig-fullmap, our initial expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
 :::
 
-## 4. We expect to observe a declining trend in Euoplos Rainbow sightings due to their endangered status.
-
-```{r}
-#| label: fig-overtime
-#| fig-cap: "Number of successful sightings over time"
-final_Euoplos_Rainbow %>%
-  group_by(year) %>%
-  summarise(Sightings = n()) %>%
-  ggplot(aes(year, Sightings)) +
-  geom_line() +
-  theme_minimal() +
-  labs(x = "Year", y = "Number of Sightings", title = "Number of successful sightings over time")
-```
-
-
-```{r}
-region_subset <- region_subset %>%
-  mutate(Year = year(eventDate)) %>%
-  group_by(Year) %>% 
-  mutate(wild_sighting= sum(occurrenceStatus),
-        tourist_trips = sum(Trips))
-
-# Create a line plot with log-scaled y-axis
-ggplot(region_subset, aes(x = Year)) +
-  geom_line(aes(y = tourist_trips, color = "Tourist Trips"), linetype = "solid") +
-  geom_line(aes(y = wild_sighting, color = "Wild Sightings"), linetype = "solid") +
-  labs(x = "Year", y = "Count") +
-  ggtitle("Ecotourist Interest in Wild Thing by Year") +
-  scale_color_manual(values = c("Tourist Trips" = "blue", "Wild Sightings" = "red")) +
-  theme_minimal() +
-  scale_x_continuous(breaks = unique(region_subset$Year))
-```
 # EcoTourism Analysis
 
 ```{r}
@@ -645,47 +622,6 @@ custom_theme <- function() {
 ```
 
 ```{r}
-#| label: Tourism Data Wrangle
-australia_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>%
-  select("SA2_NAME21", "STE_NAME21") %>%
-  rename(
-    Region = SA2_NAME21,
-    State = STE_NAME21
-  )
-
-tourist_filtered <- left_join(tourism, aus_map, by = c("Region")) %>%
-  filter(State %in% c("New South Wales", "Queensland")) %>%
-  filter(Purpose == "Holiday") %>%
-  filter(Trips != 0.00) %>%
-  mutate(Trips = round(Trips * 1000)) %>%
-  mutate(Year = year(Quarter)) %>%
-  filter(Year >= 2015) 
-```
-
-```{r}
-#| label: fig-tourism
-#| fig-cap: "Tourism Patterns Across Recent Quarters"
-p1 <- tourist_filtered %>%
-  group_by(Year) %>%
-  summarize(TotalTrips = sum(Trips), Size = max(TotalTrips)) %>%
-  ggplot(aes(x = Quarter, y = TotalTrips, size = Size)) +
-  geom_point(color = "blue") +
-  labs(
-    title = "Tourism Patterns Across Recent Quarters",
-    x = "Quarters",
-    y = "Total Trips"
-  ) + custom_theme() 
-p1_plotly <- ggplotly(p1)
-p1_plotly 
-```
-
-@fig-tourism shows the domestic trend of trips in the states of New South Wales and Queensland in the recent quarters.
-
-:::{.callout-note}
-The plot illustrates the quarterly pattern of tourism over recent quarters from 2016 to 2022. In fact, the tourism is showing a consistent increasing trend throughout. Interestingly, the trips always exceeded threshold of 5M. However, there was a slight drop in the number of trips in the first quarter of 2020 when COVID-19 was at its peak but this pandemic could not stop people from enjoying their life. Q3 2020 soon saw a rise in the domestic trips despite lockdown.
-:::
-
-```{r}
 #| label: Sightings Data Wrangle
 quarter_merged <- final_Euoplos_Rainbow %>%
   mutate(
@@ -696,28 +632,6 @@ quarter_merged <- final_Euoplos_Rainbow %>%
   filter(Year <= 2022)
 ```
 
-```{r}
-#| label: fig-sighting
-#| fig-cap: "Sightings Patterns Across Recent Quarters"
-p2 <- quarter_merged %>%
-  group_by(Year, Quarter) %>%
-  summarize(Total_occurrenceStatus = sum(occurrenceStatus), Size = max(Total_occurrenceStatus)) %>%
-  ggplot(aes(x = Quarter, y = Total_occurrenceStatus, size = Size)) +
-  geom_point(color = "red") +
-  labs(
-    title = "Sightings Patterns Across Recent Quarters",
-    x = "Quarters", 
-    y = "Sightings"
-  ) + custom_theme()
-
-p2_plotly <- ggplotly(p2)
-p2_plotly
-```
-@fig-sighting shows the rare sightings of Golden Trapdoor Spider across the recent quarters.
-
-:::{.callout-note}
-This scatter plot depicts the relationship between Golden Trapdoor Spider sightings across different quarters. It seems that these spiders are not a big fan of human beings. In fact, their sightings remained all low till 2020 until COVID-19 which in turn caused a burst in their sightings.
-:::
 
 ```{r}
 #| label: fig-ecotourismtable
@@ -756,7 +670,7 @@ final_reg
 ```
 
 
-@fig-regressionplot uses the simple regression method to show the association between Sightings and Trips. For this analysis, we considered `Sightings` as a `Response Variable` and `Tourism` as an `Explanatory Variable` meaning we are using Tourism data to predict the values of spider sightings. It is evident from the above graph that there is no association between two variables. I don't think that Sightings and Tourism share any casual relationship. 
+@fig-regressionplot uses the simple regression method to show the association between Sightings and Trips. For this analysis, we considered `Sightings` as a `Response Variable` and `Tourism` as an `Explanatory Variable` meaning we are using Tourism data to predict the values of spider sightings. It is evident from the above graph that there is no association between two variables. I do not believe that Sightings and Tourism share any significant relationship. 
 
 Lets drill further using Hypothesis Test to check the validity of our assumption.
 
@@ -768,26 +682,19 @@ kable(coefs) %>%
 kable_styling(latex_options = "HOLD_position")
 ```
 
-```{r}
-# Finding approximate p-value
-coefs$p.value
-```
+
 
 - H0 : There exists a linear association between Tourism and Spider Sightings.
 - α : 0.05 (Industry Standard)
-- p-value : 0.000000e+00, 4.440349e-71 (Calculated)
+- p-value : `r coefs$p.value` (Calculated)
 
 :::{.callout-note}
 Our Hypothesis analysis provides strong evidence that there is no association between the Golden Trapdoor Spider and tourism. The extremely small p-values, though not exactly zero, strongly suggest that the observed results are highly unlikely to have occurred by random chance. Consequently, we can confidently reject the null hypothesis implying the lack of any significant relationship between the presence of the Golden Trapdoor Spider and tourism. 
 
-Further, our p-value < α, thus, we have appropriate evidence to reject the null hypothesis.
+Since the p-value < α, we reject the null hypothesis and conclude that there is insufficient evidence that there is a linear association between the Tourism and Spider Sightings.
 :::
 
-```{r}
-cor(eco_tourism_data$travel, eco_tourism_data$sightings)
-```
-
-We can also find the correlation between sightings and travel using cor function in it which shows the correlation a very weak negative correlation of -0.1 between two variables. This means that the two variables have a very slight tendency to move in opposite directions, but the relationship is not strong or significant.
+We can also find the correlation between sightings and travel using the `cor` function. The output shows the positive correlation being very weak at a value of `r cor(eco_tourism_data$travel, eco_tourism_data$sightings)` between the two variables. This means that the two variables have a very slight tendency to move in the same direction, but the relationship is not strong or significant.
 
 ```{r}
 #| label: fig-residplot
@@ -812,26 +719,11 @@ final_p7
 @fig-residplot shows that there is weak relationship between travel and tourism.
 
 :::{.callout-note}
-#Key Takeaways
-After all our checks, we can confidently say that there exists no relationship between tourism and travel.
-:::
-
-# Summary 
-
-::: {.callout-note}
-In summary, our exploratory data analysis (EDA) of Euoplos Rainbow sightings has revealed several intriguing findings, often challenging our initial expectations:
-
-* **Geographical Distribution**: Our initial expectation of a concentration of sightings in eastern Australia, particularly in Queensland and New South Wales, has been validated. The presence of Euoplos Rainbow in South Australia was also a noteworthy discovery.
-
-* **Weather Patterns**: The weather conditions on days when Euoplos Rainbow sightings occur are predominantly dry with minimal rainfall, aligning with our initial anticipation. However, the temperature range is more moderate than expected, resembling conditions typical of the fall season.
-
-* **Activity Hours**: Surprisingly, Euoplos Rainbow sightings are more common during daytime hours, which contradicts our initial assumption of nocturnal behavior. This observation is explained by reduced human activity outdoors at night.
-
-* **Temporal Trends**: Instead of a decreasing trend in sightings, as expected for an endangered species, we observed a surge in sightings during the peak of the Covid-19 pandemic. Reduced human interference in natural habitats likely allowed these spiders to thrive.
-
-* **Limited Data**: The dataset for Euoplos Rainbow consists mainly of wild sightings, and when compared to the broader dataset, it becomes clear that data availability for this species is limited.
-
-These findings underscore the complexity of species behavior and the influence of external factors. While some expectations were confirmed, others challenged our assumptions, emphasizing the importance of data-driven insights in ecological research.
+# Key Takeaways
+- There is evidence of seasonality in tourism in Maroochydale.
+- There is an increasing trend of tourists visiting Maroochydale since 2020.
+- There exists no relationship between tourism and sightings due to a very slight correlation; not enough to agree there is a relationship.
+- It seems that these spiders are not a big fan of human beings. In fact, their sightings remained all low till 2020 until COVID-19 which in turn caused a burst in their sightings.
 :::
 
 # References
