@@ -1,6 +1,6 @@
 ---
 title: "Euoplos Rainbow - Golden Trapdoor Spider"
-author: "Team - Dragon, Members - Jay, Justin, Bilal, Hardik & Parnika"
+author: "Part 2 Team - Dragon: Bilal, Hardik & Parnika"
 format: 
   html:
     code-fold: true
@@ -32,28 +32,13 @@ These spiders can be found in diverse habitats across Australia, including fores
 
 Information about the population trends of Euoplos Rainbow is limited, largely due to the secretive nature of these spiders. Some species may face threats from habitat loss, degradation, and competition from introduced spider species, but more research is needed to determine their conservation status.
 
-In terms of expectations for exploring data on Euoplos Rainbow sightings, some unique possibilities include:
-
-1. We expect to observe a concentration of Euoplos Rainbow occurrences in subtropical eastern Australia, reflecting their abundance in this region.
-
-2. We anticipate that Euoplos Rainbow sightings are more likely to occur during hot and dry weather, particularly in the summer season.
-
-3. Given their nocturnal behavior, we expect the majority of sightings to occur during nighttime hours.
-
-4. We expect to observe a declining trend in Euoplos Rainbow sightings due to their endangered status.
-
-5. We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging
-
-These expectations provide a basis for exploring and analyzing the data on Euoplos Rainbow sightings while considering their unique biology and habitat preferences.
-
+The previous group left fascinating analysis and insights on the sightings of the Golden Trapdoor Spider. The fact that the majority of the sightings were observed in East Australia, the collective decision of our group led us to use the tourism data for East Australia over the years to try and find out if any relationship exists between the sightings of the species and the traffic of tourists in the specified region. In this assignment, we will be subsetting the data to our desired region for analysis.
 
 ```{r}
-library(ggplot2)
 library(patchwork)
 library(lubridate)
 library(galah)
 library(tidyverse)
-library(zoo)
 library(sf)
 library(readr)
 library(here)
@@ -61,12 +46,14 @@ library(tsibble)
 library(gridExtra)
 library(sf)
 library(plotly)
-library(dplyr)
 library(broom)
 library(kableExtra)
+library(DT)
 ```
 
 # Data Cleaning
+
+Comprehensive data cleaning was performed by the previous group and we found little reason to try and alter the code. The only addition made by our team was adding the `cl22` variable which allowed us to observe the state where the sighting was observed.
 
 ```{r, eval = F, echo = T}
 #| code-fold: true
@@ -168,15 +155,17 @@ load("data/final_Euoplos_Rainbow.rda")
 
 # Data Description
 
+We decided to keep the data description of the Golden Trapdoor Spider to allow the audience to get a feel of the data used for the species to allow some familiarity as we perform our tasks later on.
+
 ```{r}
 library(kableExtra)
 # Create a data frame for the table
 data_description <- data.frame(
   Variable_Name = c("decimalLatitude", "decimalLongitude", "eventDate", "scientificName", "taxonConceptID", 
                     "recordID", "dataResourceName", "occurrenceStatus", "BASIS_OF_RECORD_INVALID", 
-                     "eventTime", "basisOfRecord"),
+                     "eventTime", "basisOfRecord", "cl22"),
   Data_Type = c("Double", "Double", "Date", "Character", "Character", "Character", "Character", "Character", 
-                "Logical", "Time", "Character"),
+                "Logical", "Time", "Character", "Character"),
   Description = c("Latitude at which the sighting was recorded.", 
                   "Longitude at which the sighting was recorded.", 
                   "The date when the sighting occurred.", 
@@ -187,7 +176,8 @@ data_description <- data.frame(
                   "Denotes the status of the sighting, with a common value being 'PRESENT'.", 
                   "A binary marker indicating the validity of the record (TRUE/FALSE).", 
                   "The precise time the event or sighting took place. Several records may have this detail omitted ('NA').", 
-                  "Filter to only HUMAN_OBSERVATION value to ensure all data is wild sightings, original variable also include value of PRESERVED_SPECIMEN")
+                  "Filter to only HUMAN_OBSERVATION value to ensure all data is wild sightings, original variable also include value of PRESERVED_SPECIMEN",
+                  "The Australian State where the sighting was observed")
 )
 
 # Use kable and kable_styling to display the table
@@ -223,6 +213,11 @@ Before proceeding with any advanced analysis, potential users of this dataset sh
 
 
 ## Weather data
+
+:::{.callout-note}
+The weather data was useful to allow us to get a feel of the areas or regions where most of the sightings were observed. We begin first by checking the total sightings throughout Australia, followed by areas where most sightings occurred using the weather data.
+:::
+
 ```{r}
 ## Load in data for weather
 library(rnoaa)
@@ -274,7 +269,7 @@ assign_to_group <- function(latitude, longitude) {
 final_Euoplos_Rainbow$cluster <- mapply(assign_to_group, final_Euoplos_Rainbow$decimalLatitude, final_Euoplos_Rainbow$decimalLongitude)
 ```
 
-## Most sightings occur in the Eastern Australia
+### Most sightings occur in the Eastern Australia
 
 ```{r}
 #| label: fig-fullmap
@@ -300,7 +295,7 @@ gg
 ```
 
 ::: {.callout-note}
-As depicted in @fig-fullmap, our initial expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
+As depicted in @fig-fullmap, the expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
 :::
 
 ```{r}
@@ -337,7 +332,7 @@ gg + coord_sf(ylim = c(-29, -26.5), xlim = c(152, 155))
 ```
 
 ::: {.callout-note}
-Initially, as shown in @fig-station, I divided the majority of Eastern Australia sightings into four distinct clusters and then matched each cluster with the nearest weather station. Any remaining sightings were categorized under the "Other" group. Consequently, for Group 1 through Group 4, the corresponding weather stations are Maroochydore Aero, Brisbane, Logan City Water Treatment, and Murwillumbah (Bray Park), respectively.
+As shown in @fig-station, the previous group divided the majority of Eastern Australia sightings into four distinct clusters and then matched each cluster with the nearest weather station. Any remaining sightings were categorized under the "Other" group. Moreover, for Group 1 through Group 4, the corresponding weather stations are Maroochydore Aero, Brisbane, Logan City Water Treatment, and Murwillumbah (Bray Park), respectively.
 :::
 
 
@@ -407,7 +402,7 @@ murwillumbah <- aus_stations |>
 ```
 
 ::: {.callout-note}
-Subsequently, I will individually narrow down the year range for each weather station, focusing on the periods when the majority of sightings occurred. This step is essential to ensure that weather-related data, such as precipitation, maximum temperature, and minimum temperature, are relevant to the analysis. I will achieve this by first identifying the respective cluster assigned to each weather station, combining the relevant datasets, and utilizing line plots to visually depict the years when sightings were recorded for each specific weather station.
+Moving on, the previous group had individually narrowed down the year range for each weather station, focusing on the periods **when the majority of sightings occurred** (useful for our group). "This step is essential to ensure that weather-related data, such as precipitation, maximum temperature, and minimum temperature, are relevant to the analysis" as claimed by the previous group. However, the weather itself in essence was not of any requirement for us which led to a motive to not make use of the temperature and precipitation information. The next step however proved to be the most useful for us where they claimed they "Identified the respective cluster assigned to each weather station, combined the relevant data sets, and utilized line plots to visually depict the years when sightings were recorded for each specific weather station."
 :::
 
 ```{r}
@@ -459,11 +454,13 @@ combined_plot
 ```
 
 ::: {.callout-note}
-As illustrated in @fig-station-year above, the primary sightings took place during the following periods: Maroochydore station from 2016 to 2023, Brisbane stations from 2020 to 2023, Logan City Water Treatment station from 2020 to 2023, and Murwillumbah station from 2018 to 2023, with a noticeable gap between 2019 and 2022. Consequently, our approach will involve filtering the data for all four weather stations based on these specific year ranges and subsequently performing a left join with the Euoplos Rainbow dataset.
+The previous team had noted that "As illustrated in @fig-station-year above, the primary sightings took place during the following periods: Maroochydore station from 2016 to 2023, Brisbane stations from 2020 to 2023, Logan City Water Treatment station from 2020 to 2023, and Murwillumbah station from 2018 to 2023, with a noticeable gap between 2019 and 2022. Consequently, our approach will involve filtering the data for all four weather stations based on these specific year ranges and subsequently performing a left join with the Euoplos Rainbow dataset."
+
+For our interests, however, we realized that the Maroochydore Aero weather station had the most number of sightings as compared to the rest of the stations. Thus, we came to a conclusion to use Maroochydore as the region for our tourism analysis and ecotourism analysis.
 :::
 
 
-## 1. Joining the sightings with tourism data
+## Subsetting the Tourism Data
 
 ```{r}
 # Data downloaded from Monash A-Z Databases
@@ -502,7 +499,9 @@ tourism <- qtr_data %>%
   as_tsibble(key = c(Region, Purpose), index = Quarter)
 ```
 
-```{r}
+```{r, echo = T}
+#| code-fold: true
+#| code-summary: "Subset the tourism data for Maroochydore"
 
 #reading the SA2 regions
 aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>% 
@@ -545,17 +544,31 @@ region_subset <- region_subset %>%
 
 region_temporal <- region_subset %>%
   mutate(Year = year(Quarter)) %>%
-  mutate(Quar = quarter(Quarter)) %>%
-  group_by(Year, Quar, Region) %>%
+  group_by(Year, Quarter, Region) %>%
   summarize(Trips = sum(Trips))
 
-  
-
-
+region_quarter <- region_subset %>%
+  mutate(Year = year(Quarter),
+         Quar = quarter(Quarter)) %>%
+  group_by(Year, Quar, Region) %>%
+  summarize(Trips = sum(Trips))
 ```
 
 ```{r}
-#| label: fig-tourism
+#| label: fig-datatable
+#| fig-cap: "Tourism Patterns Across Recent Years Table"
+
+datatable(region_quarter) %>%
+  formatStyle(columns = "Trips", fontWeight = "bold", color = "royalblue")
+
+```
+
+::: {.callout-note}
+The table allows for sorting and filtering required across the number of trips to Maroochydore over the years.
+:::
+
+```{r}
+#| label: fig-tourismyear
 #| fig-cap: "Tourism Patterns Across Recent Years"
 
 plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
@@ -570,9 +583,14 @@ plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
 plot1 <- ggplotly(plot1)
 
 plot1
+```
 
-plot2 <- ggplot(region_temporal, aes(x = Quar, y = Trips, group = Year, color = Year)) +
-  geom_line() +
+```{r}
+#| label: fig-tourismquarter
+#| fig-cap: "Tourism Patterns Across Quarters"
+#| 
+plot2 <- ggplot(region_quarter, aes(x = Quar, y = Trips, group = Year)) +
+  geom_line(color = "purple4", size = 1) +
   labs(title = "Quarterly Plot of Trips to Maroochydore",
        x = "Quarter",
        y = "Trips (in thousands)") +
@@ -589,7 +607,7 @@ plot2
 ```
 
 :::{.callout-note}
-The plots above provides insights into the number of trips; yearly and quarterly. Here's a more detailed analysis:
+The figures @fig-tourismyear and @fig-tourismquarter above provide insights into the number of trips; yearly and quarterly. Here's a more detailed analysis:
 
 1.) **Yearly**: Tourism in Maroochydore has been consistently observed since 2016, with an increasing trend in the number of trips since 2020 as the smooth `loess` method confirms. Notable patterns in the data are observed:
 
@@ -658,7 +676,7 @@ eco_tourism_data <- inner_join(sightings_table, tourism_table, by = c("Quarter")
 regression <- eco_tourism_data %>%
 ggplot(aes(x = log(travel), y = sightings)) + 
   geom_point(color = "red") + 
-  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, colour = "darkblue") +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, colour = "steelblue") +
   labs(
     title = "Association between Sightings and Tourism",
     x = "Tourism", 
@@ -721,12 +739,17 @@ final_p7
 :::{.callout-note}
 # Key Takeaways
 - There is evidence of seasonality in tourism in Maroochydale.
+
 - There is an increasing trend of tourists visiting Maroochydale since 2020.
+
 - There exists no relationship between tourism and sightings due to a very slight correlation; not enough to agree there is a relationship.
+
 - It seems that these spiders are not a big fan of human beings. In fact, their sightings remained all low till 2020 until COVID-19 which in turn caused a burst in their sightings.
 :::
 
 # References
+
+### Credit goes to the previous team who spent time and effort on their assignment and left useful analysis for us to carry forward.
 
 
 1. Australian Faunal Directory. (n.d.). Euoplos. https://biodiversity.org.au/afd/taxa/Euoplos
@@ -754,11 +777,10 @@ https://doi.org/10.21105/joss.01686).
 Westgate M, Stevenson M, Kellie D, Newman P (2023). _galah: Atlas of Living Australia (ALA) Data and
 Resources in R_. R package version 1.5.2, <URL: https://CRAN.R-project.org/package=galah>.
 
-## visdat
+## DT
 
-Tierney N (2017). “visdat: Visualising Whole Data Frames.” _JOSS_, *2*(16), 355. doi:
-10.21105/joss.00355 (URL: https://doi.org/10.21105/joss.00355), <URL:
-http://dx.doi.org/10.21105/joss.00355>.
+Xie Y, Cheng J, Tan X (2023). _DT: A Wrapper of the JavaScript Library 'DataTables'_. R package version 0.30, <https://CRAN.R-project.org/package=DT>.
+
 
 ## rnoaa
 
@@ -800,6 +822,17 @@ C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. 
 
 Hao Zhu (2021). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package version
   1.3.4. https://CRAN.R-project.org/package=kableExtra
+  
+## sf
+
+Pebesma, E., & Bivand, R. (2023). Spatial Data Science: With Applications in R. Chapman and Hall/CRC. https://doi.org/10.1201/9780429459016
+
+  Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1), 439-446, https://doi.org/10.32614/RJ-2018-009
+  
+## tsibble
+
+Wang, E, D Cook, and RJ Hyndman (2020). A new tidy data structure to support exploration and modeling of temporal data, Journal of Computational and Graphical Statistics, 29:3, 466-478,
+  doi:10.1080/10618600.2019.1695624.
 
 :::
 
