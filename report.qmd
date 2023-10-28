@@ -288,46 +288,6 @@ assign_to_group <- function(latitude, longitude) {
 final_Euoplos_Rainbow$cluster <- mapply(assign_to_group, final_Euoplos_Rainbow$decimalLatitude, final_Euoplos_Rainbow$decimalLongitude)
 ```
 
-```{r}
-#| label: fig-station
-#| fig-cap: "Weather stations with 4 groups on map"
-library(ozmaps)
-library(ggrepel)
-
-sf_oz <- ozmap_data("states")
-
-stations_name <- aus_stations %>%
-  filter(name %in% c("brisbane", "maroochydore aero", "logan city water treatment", "murwillumbah (bray park)"))
-
-# Add the Australian state boundaries
-gg <- ggplot() + geom_sf(data = sf_oz, fill = "#FBFBEF", color = "grey70") +
-  geom_point(data = final_Euoplos_Rainbow,
-                      mapping = aes(x = decimalLongitude,
-                                    y = decimalLatitude,
-                                    color = cluster
-                                   ),
-                      alpha = 0.5) +
-  geom_point(data = stations_name, 
-             mapping = aes(x = longitude,
-                           y = latitude),
-             color = "black", alpha = 1) +
-  geom_text_repel(data = stations_name,
-           mapping = aes(x = longitude,
-                         y = latitude, 
-                          label = name),
-            size = 3, direction = "x") +
-  coord_sf(ylim = c(-44.5, -10), xlim = c(110, 155)) +
-  theme_bw() +
-  #theme(legend.position = "none") +
-  labs(title = "Where is Eupolos Rainbow sighted?")
-
-gg + coord_sf(ylim = c(-29, -26.5), xlim = c(152, 155)) 
-```
-
-::: {.callout-note}
-Initially, as shown in @fig-station, I divided the majority of Eastern Australia sightings into four distinct clusters and then matched each cluster with the nearest weather station. Any remaining sightings were categorized under the "Other" group. Consequently, for Group 1 through Group 4, the corresponding weather stations are Maroochydore Aero, Brisbane, Logan City Water Treatment, and Murwillumbah (Bray Park), respectively.
-:::
-
 
 ```{r}
 ### Logan city water treatment (ASN00040854)
@@ -528,7 +488,7 @@ tourism <- qtr_data %>%
 ```
 
 ```{r}
-#reading the SA2 regions
+##reading the SA2 regions
 aus_map <- read_sf(here::here("data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp")) %>% 
   select("SA2_NAME21", "STE_NAME21", "geometry") %>%
   rename(Region = SA2_NAME21,
@@ -551,27 +511,25 @@ wrangled_data <- left_join(quarter_merged, tourism_filtered, by = c("Quarter", "
   filter(Trips != 0.00) 
 
 region_subset <- wrangled_data %>%
-  filter(State %in% c("New South Wales", "Queensland")) %>%
+  filter(Region %in% "Maroochydore - Kuluin") %>%
   filter(Purpose == "Holiday") %>%
   mutate(Trips = round(Trips*1000)) %>%
   mutate(occurrenceStatus = ifelse(occurrenceStatus == "PRESENT", 1, occurrenceStatus))
 
+region_subset <- region_subset %>%
+  mutate(Region = case_when(
+    Region == "Maroochydore - Kuluin" ~ "Maroochydore")) %>%
+  group_by(Quarter, Region, State) %>%
+  summarize(Trips = sum(Trips))
+
 region_temporal <- region_subset %>%
   mutate(Year = year(Quarter)) %>%
-  group_by(Year, Quarter, State, Purpose) %>%
+  group_by(Year, Quarter, Region) %>%
   summarize(Trips = sum(Trips))
 
 
 ```
 
-
-```{r}
-#checking the data validity
-ggplot(region_subset, aes(x = State)) +
-  geom_bar(stat = "count") +
-  labs(title = "Count of States") +
-  theme_minimal()
-```
 ```{r}
 plot1 <- ggplot(data = region_temporal, aes(x = Quarter, y = Trips)) +
   geom_line() +
@@ -615,10 +573,7 @@ These findings suggest that Queensland has been a consistent tourist destination
 The reasons behind these trends in tourism may include various factors such as seasonal variations, regional events, economic factors, or shifts in travel preferences. Further analysis and domain-specific knowledge may be necessary to better understand these patterns.
 
 
-
-# Exploratory data analysis
-
-## 1. Most sightings occur in the Eastern Australia
+## Most sightings occur in the Eastern Australia
 
 ```{r}
 #| label: fig-fullmap
@@ -641,147 +596,6 @@ gg
 As depicted in @fig-fullmap, our initial expectation that most sightings would occur in Eastern Australia has been confirmed, with the majority concentrated in Queensland and New South Wales, specifically around Brisbane and the Gold Coast. Notably, there have been two natural observations of Euoplos Rainbow in South Australia.
 :::
 
-## 2. Most sightings occur during hot and dry weather, particularly in the summer season.
-
-### Maroochydore aero
-```{r}
-#| label: fig-pcpmaroo
-#| fig-cap: "Maroochydore station weather on successful sighting days"
-library(colorspace)
-library(plotly)
-
-# Set our colours for the par coords, and also tour
-clrs <- divergingx_hcl(palette="Zissou 1", n=2)
-
-maroochydore_pcp <- joined_maroochydore %>%
-  plot_ly(type = 'parcoords', 
-            line = list(color = ~sighting,
-                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
-                                  )),
-            dimensions = list(
-            list(range = c(0,1),
-                 label = 'sighting', values = ~sighting),
-            list(range = c(1,12),
-                 label = 'month', values = ~month(date)),
-            list(range = c(0,2944),
-                 label = 'precipitation', values = ~prcp),
-            list(range = c(0.2,27.3),
-                 label = 'min_temp', values = ~tmin),
-            list(range = c(13.4,39.2),
-                 label = 'max_temp', values = ~tmax)
-            )
-          ) %>%
-  layout(title = "How is Maroochydore station weather on successful sighting days?")
-
-maroochydore_pcp
-```
-
-### Brisbane
-
-```{r}
-#| label: fig-pcpbrisbane
-#| fig-cap: "Brisbane station weather on successful sighting days"
-brisbane_pcp <- joined_brisbane %>%
-  plot_ly(type = 'parcoords', 
-            line = list(color = ~sighting,
-                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
-                                  )),
-            dimensions = list(
-            list(range = c(0,1),
-                 label = 'sighting', values = ~sighting),
-            list(range = c(1,12),
-                 label = 'month', values = ~month(date)),
-            list(range = c(0,2944),
-                 label = 'precipitation', values = ~prcp),
-            list(range = c(0.2,27.3),
-                 label = 'min_temp', values = ~tmin),
-            list(range = c(13.4,39.2),
-                 label = 'max_temp', values = ~tmax)
-            )
-          ) %>%
-  layout(title = "How is Brisbane station weather on successful sighting days?")
-
-brisbane_pcp
-```
-
-### Logan city water treatment
-```{r}
-#| label: fig-pcplogan
-#| fig-cap: "Logan city station weather on successful sighting days"
-logan_city_pcp <- joined_logan_city %>%
-  plot_ly(type = 'parcoords', 
-            line = list(color = ~sighting,
-                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
-                                  )),
-            dimensions = list(
-            list(range = c(0,1),
-                 label = 'sighting', values = ~sighting),
-            list(range = c(1,12),
-                 label = 'month', values = ~month(date)),
-            list(range = c(0,2944),
-                 label = 'precipitation', values = ~prcp),
-            list(range = c(0.2,27.3),
-                 label = 'min_temp', values = ~tmin),
-            list(range = c(13.4,39.2),
-                 label = 'max_temp', values = ~tmax)
-            )
-          ) %>%
-  layout(title = "How is Logan city station weather on successful sighting days?")
-
-logan_city_pcp
-```
-
-### Murwillumbah (bray park)
-```{r}
-#| label: fig-pcpmur
-#| fig-cap: "Murwillumbah station weather on successful sighting days"
-murwillumbah_pcp <- joined_murwillumbah %>%
-  plot_ly(type = 'parcoords', 
-            line = list(color = ~sighting,
-                colorscale = list(c('0',clrs[1]), c('1',clrs[2])
-                                  )),
-            dimensions = list(
-            list(range = c(0,1),
-                 label = 'sighting', values = ~sighting),
-            list(range = c(1,12),
-                 label = 'month', values = ~month(date)),
-            list(range = c(0,2944),
-                 label = 'precipitation', values = ~prcp),
-            list(range = c(0.2,27.3),
-                 label = 'min_temp', values = ~tmin),
-            list(range = c(13.4,39.2),
-                 label = 'max_temp', values = ~tmax)
-            )
-          ) %>%
-  layout(title = "How is murwillumbah station weather on successful sighting days?")
-
-murwillumbah_pcp
-```
-
-::: {.callout-note}
-As observed in the four plots displayed above, namely @fig-pcpmaroo, @fig-pcpbrisbane, @fig-pcplogan, and @fig-pcpmur, a consistent weather pattern emerges on days when sightings of Euoplos Rainbow occur. These patterns indicate predominantly dry weather with minimal to no rainfall, aligning with our initial expectations. However, when examining the minimum and maximum temperatures, they typically fall within the ranges of 10 to 20 degrees Celsius for minimum temperature and 20 to 30 degrees Celsius for maximum temperature. This observation contrasts with our initial assumption of hot weather and is more akin to the conditions typically experienced during the fall season.
-:::
-
-## 3. The majority of sightings to occur during nighttime hours.
-
-```{r}
-#| label: fig-time
-#| fig-cap: "Distribution of Spider Sightings by Hour of the Day"
-final_Euoplos_Rainbow$eventHour <- hour(final_Euoplos_Rainbow$eventTime)
-
-final_Euoplos_Rainbow %>%
-  ggplot(aes(x = eventHour)) +
-  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
-  labs(title = "Distribution of Spider Sightings by Hour of the Day",
-       x = "Hour of the Day",
-       y = "Frequency") +
-  theme_minimal()
-```
-
-::: {.callout-note}
-As depicted in the @fig-time plot, it is worth noting that, surprisingly, the majority of Euoplos Rainbow sightings occur during daytime hours, 8:00 am to 3:00 pm which contradicts our initial assumption of predominantly nighttime activity. However, this unexpected finding can be attributed to the fact that fewer people venture outdoors during the night, reducing the chances of spotting a trapdoor spider. Consequently, we maintain our initial expectation that the primary active period for these spiders is during nighttime hours.
-:::
-
 ## 4. We expect to observe a declining trend in Euoplos Rainbow sightings due to their endangered status.
 
 ```{r}
@@ -795,54 +609,6 @@ final_Euoplos_Rainbow %>%
   theme_minimal() +
   labs(x = "Year", y = "Number of Sightings", title = "Number of successful sightings over time")
 ```
-
-::: {.callout-note}
-As illustrated in the @fig-overtime plot, we observe a relatively low number of sightings before 2020, followed by a notable surge from the latter part of 2019, peaking in 2021. This phenomenon can be attributed to the peak of the Covid-19 pandemic during this period, which resulted in reduced human interference in natural habitats. Consequently, many species, including the Euoplos Rainbow, had the opportunity to return to their natural habitats, where they are typically found. Therefore, while this trend doesn't align with the expected decrease in sightings, it is indeed positive news for the endangered Euoplos Rainbow and its habitat.
-:::
-
-## 5. We expect that population data for Euoplos Rainbow may be limited, as is common with many spider species due to their secretive behavior, making precise assessments challenging.
-
-::: {.callout-note}
-This can be readily confirmed by examining the dataset for Euoplos Rainbow, which contains a total of `r nrow(final_Euoplos_Rainbow)` rows. It's important to note that these observations represent wild sightings, excluding any data from museums, historical records, or animals living in sanctuaries or zoos. When comparing this figure to the overall number of sightings in the initial dataset of `r nrow(Euoplos_Rainbow)` which encompasses both wild and non-wild observations, it becomes evident that the dataset is indeed limited in scope.
-:::
-
-
-# Temporal Data Analysis 
-
-```{r}
-
-selected_state <- "Queensland"
-
-filtered_data <- wrangled_data %>%
-  filter(State == selected_state)
-
-selected_regions <- c("Brisbane City", "Brisbane Airport", "Logan Village")
-filtered_data <- filtered_data %>% 
-  filter(Region %in% selected_regions)
-
-filtered_data <- filtered_data %>%
-  mutate(Month = month(eventDate))
-
-# Create a bar plot to show the count of each purpose within the selected region
-ggplot(filtered_data, aes(x = eventDate, y = Trips, color = Purpose)) +
-  geom_line() +
-  labs(x = "Event Year", y = "Number of Trips") +
-  ggtitle("Number of Trips by Purpose") +
-  scale_color_brewer(palette = "Set1") +
-  facet_wrap(. ~ Region, scale = "free_y")
-  
-
-```
-The line chart provides a comprehensive view of the number of trips by event year, facilitating our temporal analysis. Queensland was selected as the focal state due to the majority of spider sightings in that area. We further narrowed our focus to specific regions, including Brisbane City, Brisbane Airport, and Logan Village, where spider sightings were prevalent. The "Purpose" variable is used to categorize and distinguish the various reasons for these trips.
-
-Intriguingly, the data for Brisbane Airport reveals a consistent trend of almost zero trips recorded between 2016 and 2022. This unusual observation may raise questions about the accessibility or specific activities in this area.
-
-In contrast, Brisbane City appears to be the preferred destination for the majority of trips, encompassing a wide range of purposes. It's worth noting a significant drop in the number of trips at the beginning of 2020, potentially attributed to the global impact of the COVID-19 pandemic. However, as restrictions eased, spider sightings surged throughout the year.
-
-Between 2016 and 2022, the primary purpose for travel, after the "Total" category, was "Business." This indicates a strong link between business activities and trips during this period. Following closely were "Visiting" and "Holiday," while the "Others" category had the fewest recorded trips.
-
-Conversely, Logan Village exhibited a slightly higher number of trips compared to Brisbane Airport across all years. Further exploration and contextual information could shed light on the specific factors influencing travel patterns in these regions.
-
 
 
 ```{r}
